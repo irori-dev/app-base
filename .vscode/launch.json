@@ -1,13 +1,30 @@
 {
-  // Use IntelliSense to learn about possible attributes.
-  // Hover to view descriptions of existing attributes.
-  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
     {
       "type": "rdbg",
-      "name": "Attach with rdbg",
+      "name": "Rails Server Debug (Docker)",
       "request": "attach",
+      "debugPort": "12345",
+      "host": "localhost",
+      "localfs": true,
+      "showProtocolLog": false
+    },
+    {
+      "type": "rdbg", 
+      "name": "Rails Console Debug",
+      "request": "launch",
+      "script": "bin/rails console",
+      "args": [],
+      "askParameters": false
+    },
+    {
+      "type": "rdbg",
+      "name": "RSpec Debug",
+      "request": "launch", 
+      "script": "bin/rspec",
+      "args": ["${file}"],
+      "askParameters": false
     }
   ]
 }

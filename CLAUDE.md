@@ -1,6 +1,39 @@
-# CLAUDE.md
+# Claude AI Integration Guide
 
-このファイルは、このリポジトリでコードを扱う際のClaude Code (claude.ai/code) へのガイダンスを提供します。
+このファイルは、Claude AI がこのRailsアプリケーションテンプレートで作業する際のガイダンスを提供します。
+
+## プロジェクト概要
+
+このテンプレートは、デュアル認証システムを持つ現代的なRailsアプリケーションの基盤です。
+
+### 主要な特徴
+
+- **デュアル認証**: ユーザーと管理者の完全分離
+- **モダンスタック**: Rails 8.0.2 + Hotwire + ViewComponent
+- **データベース**: PostgreSQL + Ridgepole (マイグレーション不使用)
+- **バックグラウンド処理**: Solid Queue (Redis不要)
+- **フロントエンド**: Tailwind CSS + Stimulus
+- **テンプレート**: Haml
+- **テスト**: RSpec + FactoryBot + Capybara
+
+### 技術スタック詳細
+
+#### コア技術
+
+- **Ruby 3.4.4** / **Rails 8.0.2**
+- **PostgreSQL 16** - 全環境統一のデータベース
+- **Solid Suite** - Redis/Sidekiqの代替
+  - Solid Cache - キャッシュレイヤー
+  - Solid Queue - バックグラウンドジョブ処理
+  - Solid Cable - WebSocket接続管理
+
+#### フロントエンドスタック
+
+- **Hotwire** - モダンなSPA風体験
+- **Tailwind CSS** - ユーティリティファーストCSS
+- **ViewComponent** - コンポーネントベースビュー
+- **ImportMap** - node_modules不要のJavaScript管理
+- **Haml** - クリーンなマークアップ
 
 ## 重要な開発ルール
 
@@ -15,26 +48,26 @@
 - **必須**: コード変更後は必ず以下を実行してください：
   - `bin/rspec` - すべてのテストが通ることを確認
   - `bin/rubocop` - コーディング規約に準拠していることを確認
+  - `bin/brakeman` - セキュリティスキャン
 
 ### テストの追加
 
 - **必須**: 機能追加や修正を行った場合は、対応するspecファイルも追加・更新してください
 - テストなしのコード変更は受け入れられません
+- コンポーネントには対応するspec/components/テストが必要です
 
 ## 基本コマンド
 
 ### 開発環境のセットアップ
 
 ```bash
-# 依存関係のインストール
-bundle install
+# 初期セットアップ（依存関係のインストールとDB作成）
+bin/setup
 
 # データベーススキーマの適用（マイグレーションの代わりにRidgepoleを使用）
-bin/rails ridgepole:apply DATABASE=primary
-bin/rails ridgepole:apply DATABASE=cache
-bin/rails ridgepole:apply DATABASE=queue
+bin/rails db:ridgepole:apply
 
-# foremanを使用して開発サーバーを起動
+# 開発サーバーを起動（foremanを使用）
 bin/dev
 
 # またはDockerで
@@ -60,13 +93,13 @@ bin/rspec spec/path/to/test_spec.rb:line_number
 
 ```bash
 # スキーマ変更の適用
-bin/rails ridgepole:apply DATABASE=primary
+bin/rails db:ridgepole:apply
 
 # ドライラン（何が変更されるかを表示）
-bin/rails ridgepole:dry-run DATABASE=primary
+bin/rails db:ridgepole:dry-run
 
 # 現在のスキーマをエクスポート
-bin/rails ridgepole:export DATABASE=primary
+bin/rails db:ridgepole:export
 ```
 
 ### コード品質

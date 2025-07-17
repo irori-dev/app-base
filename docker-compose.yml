@@ -11,9 +11,10 @@ x-app: &x-app
 services:
   app:
     <<: *x-app
-    command: /bin/sh -c "rm -f tmp/pids/server.pid && rdbg --open=vscode --nonstop -c -- bin/rails s -p 3000 -b '0.0.0.0'"
+    command: /bin/sh -c "rm -f tmp/pids/server.pid && rdbg --open --host=0.0.0.0 --port=12345 --nonstop -c -- bin/rails s -p 3000 -b '0.0.0.0'"
     ports:
       - "3000:3000"
+      - "12345:12345"  # デバッガーポート
     depends_on:
       - db
       - chrome
@@ -32,7 +33,7 @@ services:
 
   solid_queue:
     <<: *x-app
-    command: bundle exec rake solid_queue:start
+    command: bin/rails solid_queue:start
     tty: true
     stdin_open: true
     depends_on:

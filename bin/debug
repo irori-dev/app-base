@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# デバッグ用のショートカットスクリプト
+
+case "$1" in
+  "server")
+    echo "🚀 Starting Rails server with debugger..."
+    docker-compose up app
+    ;;
+  "console")
+    echo "🔧 Starting Rails console with debugger..."
+    docker-compose exec app bin/rails console
+    ;;
+  "test")
+    echo "🧪 Running tests with debugger..."
+    if [ -n "$2" ]; then
+      docker-compose exec app bin/rspec "$2"
+    else
+      docker-compose exec app bin/rspec
+    fi
+    ;;
+  "attach")
+    echo "🔗 Attaching to running Rails server..."
+    rdbg --attach --host=localhost --port=12345
+    ;;
+  "attach-container")
+    echo "🔗 Attaching to Rails server from inside container..."
+    docker-compose exec app rdbg --attach
+    ;;
+  "logs")
+    echo "📋 Showing Rails server logs..."
+    docker-compose logs -f app
+    ;;
+  *)
+    echo "Usage: bin/debug {server|console|test [file]|attach|attach-container|logs}"
+    echo ""
+    echo "Examples:"
+    echo "  bin/debug server              # Start server with debugger"
+    echo "  bin/debug console             # Start console with debugger"  
+    echo "  bin/debug test spec/models/   # Run model tests with debugger"
+    echo "  bin/debug attach              # Attach to running server (from host)"
+    echo "  bin/debug attach-container    # Attach to running server (from container)"
+    echo "  bin/debug logs                # Show server logs"
+    ;;
+esac

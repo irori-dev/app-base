@@ -126,111 +126,40 @@ jobs:
       # Slack notification
       - name: Notify Slack on success
         if: ${{ success() && steps.check-infra.outputs.exists == 'true' && env.SLACK_BOT_TOKEN != '' }}
-        uses: slackapi/slack-github-action@v1.23.0
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: slackapi/slack-github-action@v2.1.1
         with:
-          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
           payload: |
-            {
-              "text": "Deploy Success: ${{ github.repository }}",
-              "attachments": [
-                {
-                  "color": "good",
-                  "fields": [
-                    {
-                      "title": "Image",
-                      "value": "${{ env.IMAGE_URI }}",
-                      "short": true
-                    },
-                    {
-                      "title": "Branch",
-                      "value": "${{ github.ref_name }}",
-                      "short": true
-                    },
-                    {
-                      "title": "Infrastructure",
-                      "value": "No changes (continuous deployment)",
-                      "short": true
-                    },
-                    {
-                      "title": "Application URL",
-                      "value": "https://${{ github.event.repository.name }}.workshop-app.net",
-                      "short": true
-                    }
-                  ]
-                }
-              ]
-            }
-
-      - name: Notify Slack on infrastructure missing
-        if: ${{ steps.check-infra.outputs.exists == 'false' && env.SLACK_BOT_TOKEN != '' }}
-        uses: slackapi/slack-github-action@v1.23.0
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        with:
-          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-          payload: |
-            {
-              "text": "Infrastructure Setup Required: ${{ github.repository }}",
-              "attachments": [
-                {
-                  "color": "warning",
-                  "fields": [
-                    {
-                      "title": "Status",
-                      "value": "Infrastructure not found",
-                      "short": true
-                    },
-                    {
-                      "title": "Action Required",
-                      "value": "Run 'Setup Infrastructure (Manual Only)' workflow",
-                      "short": true
-                    },
-                    {
-                      "title": "Repository",
-                      "value": "${{ github.repository }}",
-                      "short": true
-                    }
-                  ]
-                }
-              ]
-            }
+            channel: ${{ secrets.SLACK_CHANNEL_ID }}
+            text: "ECR Push Success: ${{ github.repository }}"
+            attachments:
+              - color: "good"
+                fields:
+                  - title: "Image"
+                    value: "${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}"
+                    short: true
+                  - title: "Branch"
+                    value: "${{ github.ref_name }}",
+                    short: true
 
       - name: Notify Slack on failure
-        if: ${{ failure() && env.SLACK_BOT_TOKEN != '' }}
-        uses: slackapi/slack-github-action@v1.23.0
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        if: ${{ failure() }}
+        uses: slackapi/slack-github-action@v2.1.1
         with:
-          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
           payload: |
-            {
-              "text": "Deploy Failed: ${{ github.repository }}",
-              "attachments": [
-                {
-                  "color": "danger",
-                  "fields": [
-                    {
-                      "title": "Status",
-                      "value": "Failed ❌",
-                      "short": true
-                    },
-                    {
-                      "title": "Branch",
-                      "value": "${{ github.ref_name }}",
-                      "short": true
-                    },
-                    {
-                      "title": "Infrastructure Status",
-                      "value": "${{ steps.check-infra.outputs.exists == 'true' && 'Available' || 'Missing' }}",
-                      "short": true
-                    },
-                    {
-                      "title": "Details",
-                      "value": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>"
-                    }
-                  ]
-                }
-              ]
-            }
+            channel: ${{ secrets.SLACK_CHANNEL_ID }}
+            text: "ECR Push Failed: ${{ github.repository }}"
+            attachments:
+              - color: "danger"
+                fields:
+                  - title: "Status"
+                    value: "Failed ❌"
+                    short: true
+                  - title: "Branch"
+                    value: "${{ github.ref_name }}"
+                    short: true
+                  - title: "Details"
+                    value: "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>"

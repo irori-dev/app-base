@@ -1,18 +1,58 @@
-# README
+# Rails Application Template (app_base)
 
-このリポジトリは Rails アプリケーションを素早く作成するためのテンプレートです。
-clone 後に `.git` を削除して新規アプリケーションのベースとして利用してください。
+このリポジトリは、デュアル認証システムを持つ現代的なRailsアプリケーションを素早く構築するためのテンプレートです。
+clone後に`.git`を削除して、新規アプリケーションのベースとして利用してください。
 
-## git の設定をリセットする手順
+## 特徴
+
+- **デュアル認証システム**: ユーザーと管理者の完全に分離された認証
+- **モダンフロントエンド**: Hotwire (Turbo + Stimulus) による SPA風のUX
+- **コンポーネントベース**: ViewComponent による再利用可能なUI
+- **バックグラウンド処理**: Solid Queue によるジョブ処理
+- **リアルタイム機能**: Action Cable による WebSocket サポート
+- **包括的なテスト**: RSpec + FactoryBot + Capybara
+- **開発者体験**: Docker + VS Code DevContainer + デバッグ環境
+
+## 技術スタック
+
+### コア技術
+
+- **Ruby 3.4.4** / **Rails 8.0.2**
+- **PostgreSQL 16** - 全環境統一のデータベース
+- **Solid Suite** - Redis/Sidekiqの代替となるデータベースベースソリューション
+  - Solid Cache - キャッシュレイヤー
+  - Solid Queue - バックグラウンドジョブ処理
+  - Solid Cable - WebSocket接続管理
+
+### フロントエンドスタック
+
+- **Hotwire** - モダンなSPA風体験
+  - Turbo Drive - 高速ページナビゲーション
+  - Turbo Frames - 部分ページ更新
+  - Turbo Streams - リアルタイム更新
+  - Stimulus - 軽量JavaScriptフレームワーク
+- **Tailwind CSS** - ユーティリティファーストCSSフレームワーク
+- **ViewComponent** - コンポーネントベースビュー構築
+- **ImportMap** - node_modules不要のJavaScriptモジュール管理
+- **Haml** - クリーンなマークアップのためのテンプレートエンジン
+
+## クイックスタート
 
 ```bash
+# リポジトリのクローン
+git clone <repository-url>
+cd <project-name>
+
+# Gitの設定をリセット
 rm -rf .git
 git init
 git add .
 git commit -m "Initial commit"
-```
 
-任意のリモートリポジトリを追加して開発を開始します。
+# 開発環境の起動
+bin/setup
+bin/dev
+```
 
 ## 開発環境
 
@@ -92,9 +132,25 @@ N+1クエリや不要なeager loadingを自動検出します。
 
 ## Debug
 
-VS Code でのデバッグ方法は
-[こちら](https://corporate.irori.dev/posts/rails-debug-devcontainer-with-foreman)
-を参照してください。
+Docker環境でのデバッグ方法については [docs/DEBUGGING.md](docs/DEBUGGING.md) を参照してください。
+
+### デバッグ手順
+
+```bash
+# サーバー起動
+docker compose up
+
+# VS Codeでブレークポイントを設定後、F5でデバッグ開始
+# または別ターミナルで
+bin/debug attach
+```
+
+主要なデバッグコマンド：
+
+- `bin/debug attach` - 実行中のサーバーにアタッチ
+- `bin/debug console` - コンソールでのデバッグ
+- `bin/debug test [ファイル]` - テストのデバッグ
+- `bin/debug logs` - ログのリアルタイム表示
 
 ## サンプル実装
 
@@ -110,6 +166,7 @@ bin/rails db:seed
 ```
 
 デフォルトのログイン情報：
+
 - 管理者: `admin@example.com` / `password123`
 - ユーザー: `user@example.com` / `password123`
 
@@ -120,6 +177,7 @@ GET /up
 ```
 
 Rails標準のヘルスチェックエンドポイント：
+
 - アプリケーションが正常に動作している場合、200 OKを返す
 - レスポンスは緑背景のシンプルなHTML
 - ロードバランサーやモニタリングツールでの使用に最適
@@ -133,6 +191,7 @@ GET /admins/errors/trigger?type=TYPE
 ```
 
 利用可能なエラータイプ：
+
 - `standard` (デフォルト): StandardError
 - `runtime`: RuntimeError
 - `argument`: ArgumentError
@@ -151,7 +210,8 @@ curl -H "Cookie: session_id=your_admin_session" http://localhost:3000/admins/err
 curl -H "Cookie: session_id=your_admin_session" http://localhost:3000/admins/errors/trigger?type=timeout
 ```
 
-**注意**: 
+**注意**:
+
 - このエンドポイントは全環境で利用可能ですが、管理者権限が必要です
 - 本番環境では特に慎重に使用してください
 
@@ -160,12 +220,14 @@ curl -H "Cookie: session_id=your_admin_session" http://localhost:3000/admins/err
 GitHub Actionsによる2つのワークフローが設定されています：
 
 ### 1. Test Workflow (`.github/workflows/test.yml`)
+
 - **実行条件**: 全ブランチのプッシュ・PR時に実行
 - **実行内容**: 
   - RSpec、RuboCop、Brakemanの実行
   - Dockerイメージのビルドテスト
 
 ### 2. Deploy Workflow (`.github/workflows/deploy.yml`)
+
 - **実行条件**: mainブランチへのプッシュ時のみ実行
 - **実行内容**: 
   - テストワークフローの完了を待機
@@ -175,15 +237,15 @@ GitHub Actionsによる2つのワークフローが設定されています：
 
 mainブランチにプッシュした際、テストが成功すると自動的にDockerイメージをAmazon ECRにプッシュします。
 
-#### 必要なGitHub Secrets：
+#### 必要なGitHub Secrets
 
-```
+```bash
 AWS_ROLE_ARN=arn:aws:iam::123456789012:role/github-actions-role
 AWS_REGION=ap-northeast-1
 ECR_REPOSITORY=your-app-repository
 ```
 
-#### IAMロールの権限設定例：
+#### IAMロールの権限設定例
 
 ```json
 {
@@ -214,7 +276,7 @@ ECR_REPOSITORY=your-app-repository
 }
 ```
 
-#### 信頼関係の設定例：
+#### 信頼関係の設定例
 
 ```json
 {
@@ -240,6 +302,7 @@ ECR_REPOSITORY=your-app-repository
 ### Slack通知（オプション）
 
 CI実行結果をSlackに通知する場合は、以下のSecretsを設定してください：
+
 - `SLACK_BOT_TOKEN`: Slack Bot User OAuth Token
 - `SLACK_CHANNEL_ID`: 通知先のチャンネルID
 

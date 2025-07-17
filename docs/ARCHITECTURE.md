@@ -1,58 +1,131 @@
-# アーキテクチャ概要
+# アーキテクチャドキュメント
+
+このドキュメントでは、Railsアプリケーションテンプレート（app_base）の技術アーキテクチャについて詳しく説明します。
+
+## 設計思想
+
+### 主要な設計原則
+
+1. **デュアル認証システム**: ユーザーと管理者の完全分離
+2. **モダンフロントエンド**: SPA風のUXをシンプルな技術で実現
+3. **コンポーネント指向**: 再利用可能で保守しやすいUI構築
+4. **テスタビリティ**: 包括的なテスト戦略
+5. **開発者体験**: 効率的な開発環境とデバッグ機能
+6. **スケーラビリティ**: 将来の拡張を考慮した設計
 
 ## 技術スタック
 
-### バックエンド
+### コア技術
+
 - **Ruby 3.4.4** / **Rails 8.0.2**
-- **PostgreSQL 16** - 全環境で使用（開発、テスト、本番）
-- **Solid Suite** - Redis/Sidekiqの代替
-  - Solid Cache - キャッシュストレージ
-  - Solid Queue - バックグラウンドジョブ
-  - Solid Cable - WebSocket接続
+- **PostgreSQL 16** - 全環境で統一（開発、テスト、本番）
+- **Solid Suite** - Redis/Sidekiqの代替となるデータベースベースソリューション
+  - **Solid Cache** - キャッシュストレージ
+  - **Solid Queue** - バックグラウンドジョブ処理
+  - **Solid Cable** - WebSocket接続管理
 
-### フロントエンド
-- **Hotwire** - SPA風のインタラクティブUI
-  - Turbo - ページ遷移の高速化
-  - Stimulus - JavaScriptフレームワーク
-- **Tailwind CSS** - ユーティリティファーストCSS
+### フロントエンドスタック
+
+- **Hotwire** - モダンなSPA風体験を提供
+  - **Turbo Drive** - 高速ページナビゲーション
+  - **Turbo Frames** - 部分ページ更新
+  - **Turbo Streams** - リアルタイム更新
+  - **Stimulus** - 軽量JavaScriptフレームワーク
+- **Tailwind CSS** - ユーティリティファーストCSSフレームワーク
 - **ViewComponent** - コンポーネントベースのビュー構築
-- **ImportMap** - node_modules不要のJS管理
+- **ImportMap** - node_modules不要のJavaScriptモジュール管理
+- **Haml** - クリーンなマークアップのためのテンプレートエンジン
 
-### 開発ツール
-- **Docker** - 開発環境の統一
-- **Ridgepole** - スキーマ管理
-- **RSpec** - テストフレームワーク
-- **RuboCop** - コードスタイルチェック
-- **Brakeman** - セキュリティスキャン
-- **Bullet** - N+1クエリ検出
+### 主要ライブラリ
 
-## ディレクトリ構造
+- **認証**: bcrypt による安全なパスワードハッシュ化
+- **データベース**: Ridgepole によるスキーマ管理
+- **ページネーション**: Kaminari
+- **検索**: Ransack
+- **メール**: Letter Opener Web（開発環境でのプレビュー）
+- **通知**: Exception Notification + Slack連携
+- **テスト**: RSpec、FactoryBot、Capybara、WebMock
+- **コード品質**: RuboCop、Brakeman、Bullet（N+1検出）
 
-```
+### 開発環境
+
+- **Docker Compose** - コンテナ化された開発環境
+- **VS Code DevContainer** - 一貫した開発セットアップ
+- **PostgreSQL** - 全環境でのデータベース統一
+
+## アプリケーション構造
+
+### ディレクトリ構成
+
+```text
 app/
 ├── controllers/
-│   ├── admins/          # 管理者用コントローラー
-│   ├── users/           # ユーザー用コントローラー
-│   └── concerns/        # 共通処理
+│   ├── admins/              # 管理者名前空間コントローラー
+│   │   ├── base_controller.rb
+│   │   ├── admins_controller.rb
+│   │   ├── users_controller.rb
+│   │   └── sessions_controller.rb
+│   ├── users/               # ユーザー名前空間コントローラー
+│   │   ├── base_controller.rb
+│   │   ├── sessions_controller.rb
+│   │   └── password_resets_controller.rb
+│   └── concerns/            # 共通コントローラーロジック
+│       ├── authenticatable.rb
+│       ├── searchable.rb
+│       └── session_manageable.rb
 ├── models/
-│   ├── user/            # User名前空間のモデル
-│   │   ├── core.rb      # ユーザー基本情報
-│   │   ├── email_change.rb
-│   │   └── password_reset.rb
-│   └── concerns/        # 共通処理
-├── components/          # ViewComponent
-│   ├── admins/          # 管理者用コンポーネント
-│   ├── users/           # ユーザー用コンポーネント
-│   └── shared/          # 共通コンポーネント
+│   ├── user/                # User名前空間モデル
+│   │   ├── core.rb          # メインユーザーモデル
+│   │   ├── email_change.rb  # メールアドレス変更機能
+│   │   └── password_reset.rb # パスワードリセット機能
+│   ├── concerns/            # 共通モデルロジック
+│   │   ├── authentication.rb
+│   │   ├── tokenizable.rb
+│   │   └── expirable_token.rb
+│   ├── notifier/            # 通知サービス
+│   │   └── slack.rb
+│   ├── admin.rb
+│   └── contact.rb
+├── components/              # ViewComponent
+│   ├── admins/              # 管理者用コンポーネント
+│   │   ├── admin_card/
+│   │   ├── user_card/
+│   │   └── sidebar/
+│   ├── users/               # ユーザー用コンポーネント
+│   │   └── sidebar/
+│   ├── modal/               # 共通コンポーネント
+│   ├── navbar/
+│   └── toast/
 ├── views/
-│   └── svgs/            # SVGアイコン
-└── jobs/                # バックグラウンドジョブ
+│   ├── admins/              # 管理者ビュー
+│   ├── users/               # ユーザービュー
+│   └── svgs/                # SVGアイコンパーシャル
+├── jobs/                    # バックグラウンドジョブ
+│   └── create_sample_users_job.rb
+└── javascript/
+    └── controllers/         # Stimulusコントローラー
 
 db/
-└── schema/              # Ridgepoleスキーマファイル
-    ├── primary/         # メインDB
-    ├── cache/           # キャッシュDB
-    └── queue/           # ジョブキューDB
+└── schema/                  # Ridgepoleスキーマファイル
+    ├── primary/             # メインアプリケーションDB
+    │   ├── Schemafile
+    │   ├── admins.schema
+    │   ├── user_cores.schema
+    │   ├── user_password_resets.schema
+    │   └── user_email_changes.schema
+    ├── cache/               # Solid Cache DB
+    │   └── Schemafile
+    └── queue/               # Solid Queue DB
+        └── Schemafile
+
+spec/
+├── components/              # ViewComponentテスト
+├── controllers/             # コントローラーテスト
+├── models/                  # モデルテスト
+├── requests/                # リクエストテスト
+├── system/                  # システムテスト
+├── factories/               # FactoryBotファクトリー
+└── support/                 # テストヘルパー
 ```
 
 ## データベース設計
