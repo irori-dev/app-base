@@ -25,16 +25,6 @@ Parameters:
     Type: String
     Default: sg-074598d362d105f42
 
-  # SSM Parameter Store（Secrets）ARN
-  DatabaseUrlArn:
-    Type: String
-  CacheDatabaseUrlArn:
-    Type: String
-  QueueDatabaseUrlArn:
-    Type: String
-  RailsMasterKeyArn:
-    Type: String
-
 Resources:
   # ECS Task Definition
   AppTaskDef:
@@ -53,10 +43,8 @@ Resources:
         Fn::ImportValue:
           Fn::Sub: "${InfraStackName}-TaskRoleArn"
       RuntimePlatform:
-        CpuArchitecture: ARM64
+        CpuArchitecture: X86_64
         OperatingSystemFamily: LINUX
-      EphemeralStorage:
-        SizeInGiB: 20
       ContainerDefinitions:
         - Name: 
             Ref: AppName
@@ -84,16 +72,20 @@ Resources:
           Secrets:
             - Name: CACHE_DATABASE_URL
               ValueFrom: 
-                Ref: CacheDatabaseUrlArn
+                Fn::ImportValue:
+                  Fn::Sub: "${InfraStackName}-CacheDatabaseUrlArn"
             - Name: DATABASE_URL
               ValueFrom: 
-                Ref: DatabaseUrlArn
+                Fn::ImportValue:
+                  Fn::Sub: "${InfraStackName}-DatabaseUrlArn"
             - Name: QUEUE_DATABASE_URL
               ValueFrom: 
-                Ref: QueueDatabaseUrlArn
+                Fn::ImportValue:
+                  Fn::Sub: "${InfraStackName}-QueueDatabaseUrlArn"
             - Name: RAILS_MASTER_KEY
               ValueFrom: 
-                Ref: RailsMasterKeyArn
+                Fn::ImportValue:
+                  Fn::Sub: "${InfraStackName}-RailsMasterKeyArn"
           Ulimits:
             - Name: nofile
               SoftLimit: 65536
