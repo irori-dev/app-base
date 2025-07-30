@@ -1,0 +1,144 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Application deployment for app-base (ECS Task Definition and Service)
+
+Parameters:
+  AppName:
+    Type: String
+  AppPort:
+    Type: Number
+    Default: 3000
+  ImageUri:
+    Type: String
+    Description: Container image URI (use latest tag for consistent deployments without unnecessary revisions)
+  InfraStackName:
+    Type: String
+    Description: Infrastructure stack name for cross-stack references
+
+  # 既存リソース
+  ECSClusterName:
+    Type: String
+    Default: workshop-app-prod-cluster
+  SubnetIds:
+    Type: CommaDelimitedList
+    Default: "subnet-007a22c02b8945a19,subnet-0c1f81ed39188b773"
+  FargateSgId:
+    Type: String
+    Default: sg-074598d362d105f42
+
+Resources:
+  # ECS Task Definition
+  AppTaskDef:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family:
+        Fn::Sub: "${AppName}-task-def"
+      Cpu: '1024'
+      Memory: '3072'
+      NetworkMode: awsvpc
+      RequiresCompatibilities: [FARGATE]
+      ExecutionRoleArn: 
+        Fn::ImportValue:
+          Fn::Sub: "${InfraStackName}-TaskExecutionRoleArn"
+      TaskRoleArn: 
+        Fn::ImportValue:
+          Fn::Sub: "${InfraStackName}-TaskRoleArn"
+      RuntimePlatform:
+        CpuArchitecture: X86_64
+        OperatingSystemFamily: LINUX
+      ContainerDefinitions:
+        - Name: 
+            Ref: AppName
+          Image:
+            Ref: ImageUri
+          Essential: true
+          StartTimeout: 120
+          StopTimeout: 30
+          PortMappings:
+            - Name:
+                Fn::Sub: "${AppName}-3000-tcp"
+              ContainerPort: 
+                Ref: AppPort
+              HostPort: 
+                Ref: AppPort
+              Protocol: tcp
+              AppProtocol: http
+          Environment:
+            - Name: RAILS_LOG_TO_STDOUT
+              Value: "true"
+            - Name: RAILS_ENV
+              Value: production
+            - Name: RAILS_SERVE_STATIC_FILES
+              Value: "true"
+          Secrets:
+            - Name: CACHE_DATABASE_URL
+              ValueFrom: 
+                Fn::ImportValue:
+                  Fn::Sub: "${InfraStackName}-CacheDatabaseUrlArn"
+            - Name: DATABASE_URL
+              ValueFrom: 
+                Fn::ImportValue:
+                  Fn::Sub: "${InfraStackName}-DatabaseUrlArn"
+            - Name: QUEUE_DATABASE_URL
+              ValueFrom: 
+                Fn::ImportValue:
+                  Fn::Sub: "${InfraStackName}-QueueDatabaseUrlArn"
+            - Name: RAILS_MASTER_KEY
+              ValueFrom: 
+                Fn::ImportValue:
+                  Fn::Sub: "${InfraStackName}-RailsMasterKeyArn"
+          Ulimits:
+            - Name: nofile
+              SoftLimit: 65536
+              HardLimit: 65536
+            - Name: nproc
+              SoftLimit: 4096
+              HardLimit: 4096
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: 
+                Fn::ImportValue:
+                  Fn::Sub: "${InfraStackName}-LogGroupName"
+              awslogs-region: 
+                Ref: AWS::Region
+              awslogs-stream-prefix: ecs
+              mode: non-blocking
+              max-buffer-size: 25m
+
+  # ECS Service
+  AppService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName:
+        Fn::Sub: "${AppName}-service"
+      Cluster: 
+        Ref: ECSClusterName
+      LaunchType: FARGATE
+      DesiredCount: 1
+      TaskDefinition: 
+        Ref: AppTaskDef
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets: 
+            Ref: SubnetIds
+          SecurityGroups:
+            - Ref: FargateSgId
+      LoadBalancers:
+        - TargetGroupArn: 
+            Fn::ImportValue:
+              Fn::Sub: "${InfraStackName}-TargetGroupArn"
+          ContainerName: 
+            Ref: AppName
+          ContainerPort: 
+            Ref: AppPort
+
+Outputs:
+  ServiceName:
+    Description: ECS Service Name
+    Value: 
+      Ref: AppService
+  TaskDefinitionArn:
+    Description: Task Definition ARN
+    Value: 
+      Ref: AppTaskDef

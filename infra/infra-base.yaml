@@ -1,0 +1,221 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Infrastructure resources for app-base (ALB, IAM, Logs, Target Group)
+
+Parameters:
+  AppName:
+    Type: String
+  AppPort:
+    Type: Number
+    Default: 3000
+  AppHostName:
+    Type: String 
+  ListenerRulePriority:
+    Type: Number
+    Default: 100
+    Description: ALB Listener Rule Priority (will be auto-incremented if conflicts)
+
+  # 既存リソース
+  AlbHttpListenerArn:
+    Type: String
+    Default: arn:aws:elasticloadbalancing:ap-northeast-1:435917083888:listener/app/workshop-app-prod-alb/7aa0910a0c85959e/afe92482bb237c19
+    Description: ALB HTTP(80) Listener ARN
+  AlbHttpsListenerArn:
+    Type: String
+    Default: arn:aws:elasticloadbalancing:ap-northeast-1:435917083888:listener/app/workshop-app-prod-alb/7aa0910a0c85959e/510743887efc621b
+    Description: ALB HTTPS(443) Listener ARN
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Default: vpc-0f9bfe9c5d7e23930
+
+  # SSM Parameter Store（Secrets）名
+  DatabaseUrlName:
+    Type: String
+    Default: "app_base/prod/DATABASE_URL"
+  CacheDatabaseUrlName:
+    Type: String
+    Default: "app_base/prod/CACHE_DATABASE_URL"
+  QueueDatabaseUrlName:
+    Type: String
+    Default: "app_base/prod/QUEUE_DATABASE_URL"
+  RailsMasterKeyName:
+    Type: String
+    Default: "app_base/prod/RAILS_MASTER_KEY"
+
+Resources:
+  # CloudWatch Logs Group
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: "/ecs/${AppName}"
+      RetentionInDays: 7
+
+  # ECS Task Execution Role
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Fn::Sub: "${AppName}-execution-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: SSMParameterAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameters
+                  - ssm:GetParameter
+                  - ssm:GetParametersByPath                  
+                Resource:
+                  - Fn::Sub: "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${DatabaseUrlName}"
+                  - Fn::Sub: "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CacheDatabaseUrlName}"
+                  - Fn::Sub: "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${QueueDatabaseUrlName}"
+                  - Fn::Sub: "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${RailsMasterKeyName}"
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource: "*"                  
+
+  # ECS Task Role
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Fn::Sub: "${AppName}-task-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+
+  # ALB Target Group
+  AppTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name:
+        Fn::Sub: "${AppName}-tg"
+      VpcId:
+        Ref: VpcId
+      Port:
+        Ref: AppPort
+      Protocol: HTTP
+      TargetType: ip
+      HealthCheckPath: /up
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      Matcher:
+        HttpCode: '200'
+
+  # HTTP(80) → HTTPS(443)リダイレクトルール
+  HttpRedirectListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: 
+        Ref: AlbHttpListenerArn
+      Priority: 
+        Ref: ListenerRulePriority
+      Actions:
+        - Type: redirect
+          RedirectConfig:
+            Protocol: HTTPS
+            Port: "443"
+            StatusCode: HTTP_301
+      Conditions:
+        - Field: host-header
+          Values:
+            - Ref: AppHostName
+
+  # HTTPS(443) → ターゲットグループへのフォワード
+  AppListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: 
+        Ref: AlbHttpsListenerArn
+      Priority:
+        Ref: ListenerRulePriority
+      Actions:
+        - Type: forward
+          ForwardConfig:
+            TargetGroups:
+              - TargetGroupArn: 
+                  Ref: AppTargetGroup
+                Weight: 100
+      Conditions:
+        - Field: host-header
+          Values:
+            - Ref: AppHostName
+
+Outputs:
+  LogGroupName:
+    Description: CloudWatch Log Group Name
+    Value: 
+      Ref: LogGroup
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-LogGroupName"
+      
+  TaskExecutionRoleArn:
+    Description: ECS Task Execution Role ARN
+    Value: 
+      Fn::GetAtt: TaskExecutionRole.Arn
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-TaskExecutionRoleArn"
+      
+  TaskRoleArn:
+    Description: ECS Task Role ARN
+    Value: 
+      Fn::GetAtt: TaskRole.Arn
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-TaskRoleArn"
+      
+  TargetGroupArn:
+    Description: Target Group ARN
+    Value: 
+      Ref: AppTargetGroup
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-TargetGroupArn"
+
+  DatabaseUrlArn:
+    Description: SSM Parameter Store ARN for DATABASE_URL
+    Value:
+      Fn::Sub: "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${DatabaseUrlName}"
+    Export:
+      Name: 
+        Fn::Sub: "${AWS::StackName}-DatabaseUrlArn"
+  CacheDatabaseUrlArn:
+    Description: SSM Parameter Store ARN for CACHE_DATABASE_URL
+    Value:
+      Fn::Sub: "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CacheDatabaseUrlName}"
+    Export:
+      Name: 
+        Fn::Sub: "${AWS::StackName}-CacheDatabaseUrlArn"
+  QueueDatabaseUrlArn:
+    Description: SSM Parameter Store ARN for QUEUE_DATABASE_URL
+    Value:
+      Fn::Sub: "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${QueueDatabaseUrlName}"
+    Export:
+      Name: 
+        Fn::Sub: "${AWS::StackName}-QueueDatabaseUrlArn"
+  RailsMasterKeyArn:
+    Description: SSM Parameter Store ARN for RAILS_MASTER_KEY
+    Value:
+      Fn::Sub: "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${RailsMasterKeyName}"
+    Export:
+      Name: 
+        Fn::Sub: "${AWS::StackName}-RailsMasterKeyArn"

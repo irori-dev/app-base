@@ -1,0 +1,160 @@
+name: Setup Infrastructure (Manual Only)
+
+# このワークフローは手動実行のみ
+# 新しいアプリケーションのインフラを初回セットアップするために使用
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment'
+        required: true
+        default: 'prod'
+        type: choice
+        options:
+          - prod
+          - staging
+      hostname:
+        description: 'Application hostname'
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  setup-infrastructure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract application name from repository
+        id: app-name
+        run: |
+          app_name=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
+          echo "app_name=$app_name" >> $GITHUB_OUTPUT
+          echo "Application name: $app_name"
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Create SSM Parameters
+        run: |
+          echo "🔑 Creating SSM parameters for ${{ steps.app-name.outputs.app_name }}..."
+          
+          # 実際のデータベース接続情報を設定
+          aws ssm put-parameter \
+            --name "/${{ steps.app-name.outputs.app_name }}/${{ inputs.environment }}/DATABASE_URL" \
+            --value "${{ secrets.DATABASE_URL }}" \
+            --type "SecureString" \
+            --overwrite || true
+          
+          aws ssm put-parameter \
+            --name "/${{ steps.app-name.outputs.app_name }}/${{ inputs.environment }}/CACHE_DATABASE_URL" \
+            --value "${{ secrets.CACHE_DATABASE_URL }}" \
+            --type "SecureString" \
+            --overwrite || true
+          
+          aws ssm put-parameter \
+            --name "/${{ steps.app-name.outputs.app_name }}/${{ inputs.environment }}/QUEUE_DATABASE_URL" \
+            --value "${{ secrets.QUEUE_DATABASE_URL }}" \
+            --type "SecureString" \
+            --overwrite || true
+          
+          aws ssm put-parameter \
+            --name "/${{ steps.app-name.outputs.app_name }}/${{ inputs.environment }}/RAILS_MASTER_KEY" \
+            --value "${{ secrets.RAILS_MASTER_KEY }}" \
+            --type "SecureString" \
+            --overwrite || true
+          
+          echo "✅ SSM parameters created"
+
+      - name: Deploy Infrastructure
+        run: |
+          echo "🏗️ Deploying infrastructure for ${{ steps.app-name.outputs.app_name }}..."
+          
+          # ALBリスナールールの優先度を自動取得
+          ALB_LISTENER_ARN="arn:aws:elasticloadbalancing:ap-northeast-1:435917083888:listener/app/workshop-app-prod-alb/7aa0910a0c85959e/afe92482bb237c19"
+          
+          echo "📋 Finding next available priority for ALB listener rule..."
+          EXISTING_PRIORITIES=$(aws elbv2 describe-rules \
+            --listener-arn $ALB_LISTENER_ARN \
+            --query 'Rules[?Priority!=`default`].Priority' \
+            --output text | tr '\t' '\n' | sort -n)
+          
+          NEXT_PRIORITY=1
+          for priority in $EXISTING_PRIORITIES; do
+            if [ "$priority" -eq "$NEXT_PRIORITY" ]; then
+              NEXT_PRIORITY=$((NEXT_PRIORITY + 1))
+            else
+              break
+            fi
+          done
+          
+          echo "🎯 Using priority: $NEXT_PRIORITY"
+          
+          aws cloudformation deploy \
+            --template-file infra/infra-base.yaml \
+            --stack-name ${{ steps.app-name.outputs.app_name }}-${{ inputs.environment }}-infra \
+            --parameter-overrides \
+              AppName=${{ steps.app-name.outputs.app_name }} \
+              AppHostName=${{ inputs.hostname }} \
+              ListenerRulePriority=$NEXT_PRIORITY \
+              DatabaseUrlName=${{ steps.app-name.outputs.app_name }}/${{ inputs.environment }}/DATABASE_URL \
+              CacheDatabaseUrlName=${{ steps.app-name.outputs.app_name }}/${{ inputs.environment }}/CACHE_DATABASE_URL \
+              QueueDatabaseUrlName=${{ steps.app-name.outputs.app_name }}/${{ inputs.environment }}/QUEUE_DATABASE_URL \
+              RailsMasterKeyName=${{ steps.app-name.outputs.app_name }}/${{ inputs.environment }}/RAILS_MASTER_KEY \
+            --capabilities CAPABILITY_NAMED_IAM
+          
+          echo "✅ Infrastructure deployment completed"
+
+      - name: Setup completion instructions
+        run: |
+          echo "📋 Infrastructure setup completed!"
+          echo ""
+          echo "✅ Repository secrets have been automatically updated"
+          echo "🚀 Ready to deploy! Push your code to main branch to trigger automatic deployment"
+          echo "🌐 Your application will be available at: https://${{ inputs.hostname }}"
+          echo ""
+          echo "Created resources:"
+          echo "- CloudFormation Stack: ${{ steps.app-name.outputs.app_name }}-${{ inputs.environment }}-infra"
+          echo "- ECR Repository: workshop-app/${{ inputs.environment }}/${{ steps.app-name.outputs.app_name }}"
+          echo "- SSM Parameters: /${{ steps.app-name.outputs.app_name }}/${{ inputs.environment }}/*"
+
+      - name: Notify Slack on success
+        if: ${{ success() && env.SLACK_BOT_TOKEN != '' }}
+        uses: slackapi/slack-github-action@v1.23.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          payload: |
+            {
+              "text": "Infrastructure Setup Success: ${{ steps.app-name.outputs.app_name }}",
+              "attachments": [
+                {
+                  "color": "good",
+                  "fields": [
+                    {
+                      "title": "Application",
+                      "value": "${{ steps.app-name.outputs.app_name }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Environment",
+                      "value": "${{ inputs.environment }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Hostname",
+                      "value": "${{ inputs.hostname }}",
+                      "short": true
+                    }
+                  ]
+                }
+              ]
+            }
