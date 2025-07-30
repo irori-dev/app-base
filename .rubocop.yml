@@ -39,6 +39,9 @@ Style/ClassAndModuleChildren:
   EnforcedStyle: compact
 Lint/MissingSuper:
   Enabled: false
+Lint/Debugger:
+  Exclude:
+    - 'lib/debug_helpers.rb'
 Naming/PredicatePrefix:
   ForbiddenPrefixes:
     - is_
