@@ -6,10 +6,6 @@ name: Setup Infrastructure (Manual Only)
 on:
   workflow_dispatch:
     inputs:
-      app_name:
-        description: 'Application name'
-        required: true
-        type: string
       environment:
         description: 'Environment'
         required: true
@@ -33,6 +29,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Extract application name from repository
+        id: app-name
+        run: |
+          app_name=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
+          echo "app_name=$app_name" >> $GITHUB_OUTPUT
+          echo "Application name: $app_name"
+
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -41,29 +44,29 @@ jobs:
 
       - name: Create SSM Parameters
         run: |
-          echo "🔑 Creating SSM parameters for ${{ inputs.app_name }}..."
+          echo "🔑 Creating SSM parameters for ${{ steps.app-name.outputs.app_name }}..."
           
           # 実際のデータベース接続情報を設定
           aws ssm put-parameter \
-            --name "/${{ inputs.app_name }}/${{ inputs.environment }}/DATABASE_URL" \
+            --name "/${{ steps.app-name.outputs.app_name }}/${{ inputs.environment }}/DATABASE_URL" \
             --value "${{ secrets.DATABASE_URL }}" \
             --type "SecureString" \
             --overwrite || true
           
           aws ssm put-parameter \
-            --name "/${{ inputs.app_name }}/${{ inputs.environment }}/CACHE_DATABASE_URL" \
+            --name "/${{ steps.app-name.outputs.app_name }}/${{ inputs.environment }}/CACHE_DATABASE_URL" \
             --value "${{ secrets.CACHE_DATABASE_URL }}" \
             --type "SecureString" \
             --overwrite || true
           
           aws ssm put-parameter \
-            --name "/${{ inputs.app_name }}/${{ inputs.environment }}/QUEUE_DATABASE_URL" \
+            --name "/${{ steps.app-name.outputs.app_name }}/${{ inputs.environment }}/QUEUE_DATABASE_URL" \
             --value "${{ secrets.QUEUE_DATABASE_URL }}" \
             --type "SecureString" \
             --overwrite || true
           
           aws ssm put-parameter \
-            --name "/${{ inputs.app_name }}/${{ inputs.environment }}/RAILS_MASTER_KEY" \
+            --name "/${{ steps.app-name.outputs.app_name }}/${{ inputs.environment }}/RAILS_MASTER_KEY" \
             --value "${{ secrets.RAILS_MASTER_KEY }}" \
             --type "SecureString" \
             --overwrite || true
@@ -72,7 +75,7 @@ jobs:
 
       - name: Deploy Infrastructure
         run: |
-          echo "🏗️ Deploying infrastructure for ${{ inputs.app_name }}..."
+          echo "🏗️ Deploying infrastructure for ${{ steps.app-name.outputs.app_name }}..."
           
           # ALBリスナールールの優先度を自動取得
           ALB_LISTENER_ARN="arn:aws:elasticloadbalancing:ap-northeast-1:435917083888:listener/app/workshop-app-prod-alb/7aa0910a0c85959e/afe92482bb237c19"
@@ -95,43 +98,19 @@ jobs:
           echo "🎯 Using priority: $NEXT_PRIORITY"
           
           aws cloudformation deploy \
-            --template-file infra/apps/app-base/infra-base.yaml \
-            --stack-name ${{ inputs.app_name }}-${{ inputs.environment }}-infra \
+            --template-file infra/infra-base.yaml \
+            --stack-name ${{ steps.app-name.outputs.app_name }}-${{ inputs.environment }}-infra \
             --parameter-overrides \
-              AppName=${{ inputs.app_name }} \
+              AppName=${{ steps.app-name.outputs.app_name }} \
               AppHostName=${{ inputs.hostname }} \
               ListenerRulePriority=$NEXT_PRIORITY \
-              DatabaseUrlArn=arn:aws:ssm:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:parameter/${{ inputs.app_name }}/${{ inputs.environment }}/DATABASE_URL \
-              CacheDatabaseUrlArn=arn:aws:ssm:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:parameter/${{ inputs.app_name }}/${{ inputs.environment }}/CACHE_DATABASE_URL \
-              QueueDatabaseUrlArn=arn:aws:ssm:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:parameter/${{ inputs.app_name }}/${{ inputs.environment }}/QUEUE_DATABASE_URL \
-              RailsMasterKeyArn=arn:aws:ssm:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:parameter/${{ inputs.app_name }}/${{ inputs.environment }}/RAILS_MASTER_KEY \
+              DatabaseUrlName=${{ steps.app-name.outputs.app_name }}/${{ inputs.environment }}/DATABASE_URL \
+              CacheDatabaseUrlName=${{ steps.app-name.outputs.app_name }}/${{ inputs.environment }}/CACHE_DATABASE_URL \
+              QueueDatabaseUrlName=${{ steps.app-name.outputs.app_name }}/${{ inputs.environment }}/QUEUE_DATABASE_URL \
+              RailsMasterKeyName=${{ steps.app-name.outputs.app_name }}/${{ inputs.environment }}/RAILS_MASTER_KEY \
             --capabilities CAPABILITY_NAMED_IAM
           
           echo "✅ Infrastructure deployment completed"
-
-      - name: Create ECR Repository
-        run: |
-          echo "🐳 Creating ECR repository..."
-          
-          aws ecr create-repository \
-            --repository-name workshop-app/${{ inputs.environment }}/${{ inputs.app_name }} \
-            --region ${{ secrets.AWS_REGION }} || echo "Repository might already exist"
-          
-          echo "✅ ECR repository ready"
-
-      - name: Update repository secrets automatically
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "🔧 Updating repository secrets..."
-          
-          # ECR_REPOSITORY secretを自動更新
-          ECR_REPO="workshop-app/${{ inputs.environment }}/${{ inputs.app_name }}"
-          
-          gh secret set ECR_REPOSITORY --body "$ECR_REPO"
-          
-          echo "✅ Repository secrets updated automatically:"
-          echo "ECR_REPOSITORY=$ECR_REPO"
 
       - name: Setup completion instructions
         run: |
@@ -142,9 +121,9 @@ jobs:
           echo "🌐 Your application will be available at: https://${{ inputs.hostname }}"
           echo ""
           echo "Created resources:"
-          echo "- CloudFormation Stack: ${{ inputs.app_name }}-${{ inputs.environment }}-infra"
-          echo "- ECR Repository: workshop-app/${{ inputs.environment }}/${{ inputs.app_name }}"
-          echo "- SSM Parameters: /${{ inputs.app_name }}/${{ inputs.environment }}/*"
+          echo "- CloudFormation Stack: ${{ steps.app-name.outputs.app_name }}-${{ inputs.environment }}-infra"
+          echo "- ECR Repository: workshop-app/${{ inputs.environment }}/${{ steps.app-name.outputs.app_name }}"
+          echo "- SSM Parameters: /${{ steps.app-name.outputs.app_name }}/${{ inputs.environment }}/*"
 
       - name: Notify Slack on success
         if: ${{ success() && env.SLACK_BOT_TOKEN != '' }}
@@ -155,14 +134,14 @@ jobs:
           channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
           payload: |
             {
-              "text": "Infrastructure Setup Success: ${{ inputs.app_name }}",
+              "text": "Infrastructure Setup Success: ${{ steps.app-name.outputs.app_name }}",
               "attachments": [
                 {
                   "color": "good",
                   "fields": [
                     {
                       "title": "Application",
-                      "value": "${{ inputs.app_name }}",
+                      "value": "${{ steps.app-name.outputs.app_name }}",
                       "short": true
                     },
                     {

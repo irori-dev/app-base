@@ -7,7 +7,6 @@ name: Build & Deploy Application
 # - AWS_ROLE_ARN: ARN of the IAM role for OIDC authentication
 # - AWS_REGION: AWS region (e.g., ap-northeast-1)
 # - AWS_ACCOUNT_ID: AWS account ID
-# - ECR_REPOSITORY: ECR repository name (e.g., workshop-app/app-name)
 # - SLACK_BOT_TOKEN: Slack bot token (optional)
 # - SLACK_CHANNEL_ID: Slack channel ID (optional)
 
@@ -54,20 +53,48 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      # ECRリポジトリの存在確認と自動作成
+      - name: Ensure ECR repository exists
+        env:
+          REPO: ${{ github.event.repository.name }}
+        run: |
+          echo "🔍 Checking if ECR repository exists: $REPO"
+          
+          if aws ecr describe-repositories --repository-names "$REPO" >/dev/null 2>&1; then
+            echo "✅ ECR repository already exists: $REPO"
+          else
+            echo "📦 Creating ECR repository: $REPO"
+            aws ecr create-repository \
+              --repository-name "$REPO" \
+              --image-scanning-configuration scanOnPush=true \
+              --encryption-configuration encryptionType=AES256
+            
+            echo "✅ ECR repository created successfully: $REPO"
+          fi
+
       - name: Build & Push image
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPO:     ${{ secrets.ECR_REPOSITORY }}
+          REPO:     ${{ github.event.repository.name }}
           TAG:      ${{ github.sha }}
         run: |
-          echo "🐳 Building Docker image..."
-          docker build -t $REGISTRY/$REPO:$TAG .
-          docker build -t $REGISTRY/$REPO:latest .
+          echo "🐳 Building Docker image with multiple tags..."
+          docker build -t $REGISTRY/$REPO:$TAG -t $REGISTRY/$REPO:latest .
+          
+          echo "📤 Pushing images to ECR..."
           docker push   $REGISTRY/$REPO:$TAG
           docker push   $REGISTRY/$REPO:latest
           
-          echo "IMAGE_URI=$REGISTRY/$REPO:$TAG" >> $GITHUB_ENV
-          echo "✅ Docker image pushed: $REGISTRY/$REPO:$TAG"
+          echo "✅ Successfully pushed:"
+          echo "  - $REGISTRY/$REPO:$TAG"
+          echo "  - $REGISTRY/$REPO:latest"
+          
+          # Use latest tag for ECS deployment to avoid unnecessary task definition revisions
+          # Comment out the next line and uncomment the line after if you want to use commit-specific tags
+          echo "IMAGE_URI=$REGISTRY/$REPO:latest" >> $GITHUB_ENV
+          # echo "IMAGE_URI=$REGISTRY/$REPO:$TAG" >> $GITHUB_ENV
+          
+          echo "✅ Docker image URI set for deployment: $REGISTRY/$REPO:latest"
 
       # インフラ存在確認
       - name: Check if infrastructure exists
@@ -88,27 +115,25 @@ jobs:
             echo "::warning::Infrastructure not found. Deployment will be skipped."
             echo "📋 Next steps:"
             echo "1. Run 'Setup Infrastructure (Manual Only)' workflow from Actions tab"
-            echo "2. Update ECR_REPOSITORY secret if needed"
-            echo "3. Push code again to trigger automatic deployment"
+            echo "2. Push code again to trigger automatic deployment"
           fi
 
       # アプリケーションデプロイ（分離されたテンプレートを使用）
       - name: Deploy Application
+        # インフラが存在する場合のみ実行
         if: ${{ steps.check-infra.outputs.exists == 'true' }}
         run: |
           echo "🚀 Deploying application with separated template..."
           
+          # Deploy with latest tag to minimize unnecessary ECS task definition revisions
+          # Same ImageUri (latest tag) will not trigger new task definition revision
           aws cloudformation deploy \
-            --template-file infra/apps/app-base/app-deploy.yaml \
+            --template-file infra/app-deploy.yaml \
             --stack-name ${{ github.event.repository.name }}-app \
             --parameter-overrides \
               AppName=${{ github.event.repository.name }} \
               ImageUri=$IMAGE_URI \
               InfraStackName=${{ steps.check-infra.outputs.infra-stack-name }} \
-              DatabaseUrlArn=arn:aws:ssm:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:parameter/${{ github.event.repository.name }}/prod/DATABASE_URL \
-              CacheDatabaseUrlArn=arn:aws:ssm:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:parameter/${{ github.event.repository.name }}/prod/CACHE_DATABASE_URL \
-              QueueDatabaseUrlArn=arn:aws:ssm:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:parameter/${{ github.event.repository.name }}/prod/QUEUE_DATABASE_URL \
-              RailsMasterKeyArn=arn:aws:ssm:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:parameter/${{ github.event.repository.name }}/prod/RAILS_MASTER_KEY \
             --capabilities CAPABILITY_IAM
           
           echo "✅ Application deployment completed"
@@ -137,7 +162,7 @@ jobs:
               - color: "good"
                 fields:
                   - title: "Image"
-                    value: "${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}"
+                    value: "${{ steps.login-ecr.outputs.registry }}/${{ github.event.repository.name }}:${{ github.sha }}"
                     short: true
                   - title: "Branch"
                     value: "${{ github.ref_name }}",

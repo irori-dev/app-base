@@ -9,7 +9,7 @@ Parameters:
     Default: 3000
   ImageUri:
     Type: String
-    Description: Container image URI
+    Description: Container image URI (use latest tag for consistent deployments without unnecessary revisions)
   InfraStackName:
     Type: String
     Description: Infrastructure stack name for cross-stack references
