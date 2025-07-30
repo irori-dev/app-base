@@ -95,7 +95,7 @@ gem "letter_opener_web"
 # downgrade
 gem "stringio", "3.1.2"
 gem "psych", "5.2.2"
-gem "rdoc", "6.10.0"
+gem "rdoc", "6.14.2"
 gem "reline", "0.6.0"
 gem "irb", "1.14.3"
 gem "json", "2.9.1"

@@ -112,6 +112,7 @@ GEM
     diff-lcs (1.6.2)
     diffy (3.4.4)
     drb (2.2.3)
+    erb (5.0.1)
     erubi (1.13.1)
     et-orbi (1.2.11)
       tzinfo
@@ -280,7 +281,8 @@ GEM
       activerecord (>= 6.1.5)
       activesupport (>= 6.1.5)
       i18n
-    rdoc (6.10.0)
+    rdoc (6.14.2)
+      erb
       psych (>= 4.0.0)
     regexp_parser (2.10.0)
     reline (0.6.0)
@@ -429,7 +431,7 @@ DEPENDENCIES
   puma (>= 6.4)
   rails (~> 8.0.2)
   ransack
-  rdoc (= 6.10.0)
+  rdoc (= 6.14.2)
   reline (= 0.6.0)
   ridgepole
   rspec-rails
