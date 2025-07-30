@@ -144,7 +144,7 @@ GEM
       actionpack (>= 6.0.0)
       activesupport (>= 6.0.0)
       railties (>= 6.0.0)
-    io-console (0.8.0)
+    io-console (0.8.1)
     irb (1.14.3)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
@@ -283,7 +283,7 @@ GEM
     rdoc (6.10.0)
       psych (>= 4.0.0)
     regexp_parser (2.10.0)
-    reline (0.6.0)
+    reline (0.6.2)
       io-console (~> 0.5)
     rexml (3.4.1)
     ridgepole (3.0.2)
@@ -430,7 +430,7 @@ DEPENDENCIES
   rails (~> 8.0.2)
   ransack
   rdoc (= 6.10.0)
-  reline (= 0.6.0)
+  reline (= 0.6.2)
   ridgepole
   rspec-rails
   rubocop
