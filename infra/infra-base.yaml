@@ -7,8 +7,6 @@ Parameters:
   AppPort:
     Type: Number
     Default: 3000
-  AppHostName:
-    Type: String 
   ListenerRulePriority:
     Type: Number
     Default: 100
@@ -136,7 +134,7 @@ Resources:
       Conditions:
         - Field: host-header
           Values:
-            - Ref: AppHostName
+            - Fn::Sub: "${AppName}.workshop-app.net"
 
   # HTTPS(443) → ターゲットグループへのフォワード
   AppListenerRule:
@@ -156,7 +154,7 @@ Resources:
       Conditions:
         - Field: host-header
           Values:
-            - Ref: AppHostName
+            - Fn::Sub: "${AppName}.workshop-app.net"
 
 Outputs:
   LogGroupName:
@@ -190,6 +188,14 @@ Outputs:
     Export:
       Name:
         Fn::Sub: "${AWS::StackName}-TargetGroupArn"
+
+  AppHostName:
+    Description: Application Host Name
+    Value:
+      Fn::Sub: "${AppName}.workshop-app.net"
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-AppHostName"
 
   DatabaseUrlArn:
     Description: SSM Parameter Store ARN for DATABASE_URL
