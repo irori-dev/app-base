@@ -14,10 +14,6 @@ on:
         options:
           - prod
           - staging
-      hostname:
-        description: 'Application hostname'
-        required: true
-        type: string
 
 permissions:
   id-token: write
@@ -102,7 +98,6 @@ jobs:
             --stack-name ${{ steps.app-name.outputs.app_name }}-${{ inputs.environment }}-infra \
             --parameter-overrides \
               AppName=${{ steps.app-name.outputs.app_name }} \
-              AppHostName=${{ inputs.hostname }} \
               ListenerRulePriority=$NEXT_PRIORITY \
               DatabaseUrlName=${{ steps.app-name.outputs.app_name }}/${{ inputs.environment }}/DATABASE_URL \
               CacheDatabaseUrlName=${{ steps.app-name.outputs.app_name }}/${{ inputs.environment }}/CACHE_DATABASE_URL \
@@ -118,7 +113,7 @@ jobs:
           echo ""
           echo "✅ Repository secrets have been automatically updated"
           echo "🚀 Ready to deploy! Push your code to main branch to trigger automatic deployment"
-          echo "🌐 Your application will be available at: https://${{ inputs.hostname }}"
+          echo "🌐 Your application will be available at: https://${{ steps.app-name.outputs.app_name }}.workshop-app.net"
           echo ""
           echo "Created resources:"
           echo "- CloudFormation Stack: ${{ steps.app-name.outputs.app_name }}-${{ inputs.environment }}-infra"
