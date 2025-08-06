@@ -3,6 +3,7 @@ class ApplicationController < ActionController::Base
   include Authenticatable
 
   before_action :prepare_exception_notifier
+  before_action :set_logging_context
 
   # Authenticatable concern methods
   alias require_user! require_resource!
@@ -41,6 +42,20 @@ class ApplicationController < ActionController::Base
 
   def after_sign_in_path
     root_path
+  end
+
+  def set_logging_context
+    # Set user context for logging
+    Thread.current[:current_user_id] = current_user&.id
+    Thread.current[:controller_name] = controller_name
+    Thread.current[:action_name] = action_name
+    Thread.current[:filtered_params] = filtered_params_for_logging
+  end
+
+  def filtered_params_for_logging
+    params.to_unsafe_h.except(:controller, :action, :authenticity_token)
+  rescue StandardError
+    {}
   end
 
 end
