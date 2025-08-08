@@ -181,4 +181,73 @@ RSpec.describe LoggingInfrastructure::StructuredLogger do
       expect(log['duration_ms']).to eq(145.67)
     end
   end
+
+  describe 'Rails logger compatibility' do
+    describe 'methods without arguments' do
+      it 'handles debug without arguments' do
+        logger = described_class.new(level: :debug, output:)
+        expect { logger.debug }.not_to raise_error
+
+        output.rewind
+        log = JSON.parse(output.read)
+        expect(log['level']).to eq('debug')
+        expect(log['message']).to eq('')
+      end
+
+      it 'handles info with block' do
+        logger.info { 'Block message' }
+
+        output.rewind
+        log = JSON.parse(output.read)
+        expect(log['message']).to eq('Block message')
+      end
+    end
+
+    describe '#silence' do
+      it 'temporarily changes the log level' do
+        logger = described_class.new(level: :debug, output:)
+
+        logger.debug('This should appear')
+
+        logger.silence(:error) do
+          logger.debug('This should not appear')
+          logger.warn('This should not appear')
+          logger.error('This should appear')
+        end
+
+        logger.debug('This should appear again')
+
+        output.rewind
+        lines = output.read.split("\n").map { |line| JSON.parse(line) }
+
+        expect(lines.length).to eq(3)
+        messages = lines.map { |l| l['message'] }
+        expect(messages).to eq(['This should appear', 'This should appear', 'This should appear again'])
+      end
+    end
+
+    describe '#add' do
+      it 'logs messages using Logger severity constants' do
+        logger.add(Logger::INFO, 'Test message')
+
+        output.rewind
+        log = JSON.parse(output.read)
+
+        expect(log['message']).to eq('Test message')
+        expect(log['level']).to eq('info')
+      end
+    end
+
+    describe '#unknown' do
+      it 'logs unknown messages at fatal level' do
+        logger.unknown('Unknown message')
+
+        output.rewind
+        log = JSON.parse(output.read)
+
+        expect(log['message']).to eq('Unknown message')
+        expect(log['level']).to eq('fatal')
+      end
+    end
+  end
 end

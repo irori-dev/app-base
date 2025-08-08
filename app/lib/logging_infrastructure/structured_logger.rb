@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'logger'
+
 class LoggingInfrastructure::StructuredLogger
 
   SENSITIVE_KEYS = %w[
@@ -29,24 +31,39 @@ class LoggingInfrastructure::StructuredLogger
     @current_level = @log_levels[level] || 1
   end
 
-  def debug(message, metadata = {})
-    log(:debug, message, metadata)
+  def debug(message = nil, metadata = {}, &block)
+    return unless debug?
+
+    message = block.call if block_given? && message.nil?
+    log(:debug, message || '', metadata)
   end
 
-  def info(message, metadata = {})
-    log(:info, message, metadata)
+  def info(message = nil, metadata = {}, &block)
+    return unless info?
+
+    message = block.call if block_given? && message.nil?
+    log(:info, message || '', metadata)
   end
 
-  def warn(message, metadata = {})
-    log(:warn, message, metadata)
+  def warn(message = nil, metadata = {}, &block)
+    return unless warn?
+
+    message = block.call if block_given? && message.nil?
+    log(:warn, message || '', metadata)
   end
 
-  def error(message, metadata = {})
-    log(:error, message, metadata)
+  def error(message = nil, metadata = {}, &block)
+    return unless error?
+
+    message = block.call if block_given? && message.nil?
+    log(:error, message || '', metadata)
   end
 
-  def fatal(message, metadata = {})
-    log(:fatal, message, metadata)
+  def fatal(message = nil, metadata = {}, &block)
+    return unless fatal?
+
+    message = block.call if block_given? && message.nil?
+    log(:fatal, message || '', metadata)
   end
 
   # Rails logger compatibility methods
@@ -70,7 +87,55 @@ class LoggingInfrastructure::StructuredLogger
     @log_levels[:fatal] >= @current_level
   end
 
+  # Rails logger compatibility - silence method
+  def silence(temporary_level = :error)
+    old_level = @level
+    @level = temporary_level
+    @current_level = @log_levels[temporary_level] || @log_levels[:error]
+    yield self
+  ensure
+    @level = old_level
+    @current_level = @log_levels[old_level] || 1
+  end
+
+  # Rails logger compatibility - unknown method
+  def unknown(message = nil, progname = nil, &block)
+    message = progname if message.nil? && progname
+    message = block.call if message.nil? && block_given?
+    log(:fatal, message || 'Unknown', {})
+  end
+
+  # Rails logger compatibility - add method
+  def add(severity, message = nil, progname = nil, &block)
+    severity_level = severity_to_level(severity)
+    message = progname if message.nil? && progname
+    message = block.call if message.nil? && block_given?
+    log(severity_level, message || '', {})
+  end
+
+  # Rails logger compatibility - formatter
+  attr_accessor :formatter
+
+  # Rails logger compatibility - close method
+  def close
+    @output.close if @output.respond_to?(:close) && @output != $stdout && @output != $stderr
+  end
+
+  SEVERITY_MAPPING = {
+    Logger::DEBUG => :debug,
+    Logger::INFO => :info,
+    Logger::WARN => :warn,
+    Logger::ERROR => :error,
+    Logger::FATAL => :fatal,
+    Logger::UNKNOWN => :fatal,
+  }.freeze
+  private_constant :SEVERITY_MAPPING
+
   private
+
+  def severity_to_level(severity)
+    SEVERITY_MAPPING[severity] || :info
+  end
 
   def log(level, message, metadata)
     return if @log_levels[level] < @current_level

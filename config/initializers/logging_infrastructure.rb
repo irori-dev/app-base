@@ -83,6 +83,16 @@ Rails.application.configure do
     ActiveRecord::Base.logger = config.logger
     # verbose_query_logs is not available in Rails 8
     # ActiveRecord::Base.verbose_query_logs = Rails.env.development?
+    
+    # Suppress SQL logging for Solid Queue worker processes
+    if defined?(SolidQueue) && ($0 =~ /solid_queue/ || ENV['SOLID_QUEUE_WORKER'])
+      # Use a higher log level for ActiveRecord in worker processes
+      ar_logger = LoggingInfrastructure::StructuredLogger.new(
+        level: :warn,
+        output: config.logger.instance_variable_get(:@output)
+      )
+      ActiveRecord::Base.logger = ar_logger
+    end
   end
 
   # Configure ActionView logging

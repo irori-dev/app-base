@@ -3,7 +3,7 @@ class Admins::UsersController < Admins::BaseController
   include Searchable
 
   def index
-    @users = setup_search(User::Core, includes: %i[password_resets email_changes])
+    @users = setup_search(User::Core)
       .page(params[:page])
   end
 
