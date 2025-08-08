@@ -20,7 +20,7 @@
 
 #### コア技術
 
-- **Ruby 3.4.4** / **Rails 8.0.2**
+- **Ruby 3.4.5** / **Rails 8.0.2**
 - **PostgreSQL 16** - 全環境統一のデータベース
 - **Solid Suite** - Redis/Sidekiqの代替
   - Solid Cache - キャッシュレイヤー

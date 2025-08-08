@@ -97,8 +97,8 @@ GEM
       rack-test (>= 0.6.3)
       regexp_parser (>= 1.5, < 3.0)
       xpath (~> 3.2)
-    childprocess (5.1.0)
-      logger (~> 1.5)
+    cgi (0.4.2)
+    childprocess (4.1.0)
     concurrent-ruby (1.3.5)
     connection_pool (2.5.3)
     crack (1.0.0)
@@ -112,10 +112,12 @@ GEM
     diff-lcs (1.6.2)
     diffy (3.4.4)
     drb (2.2.3)
+    erb (4.0.4)
+      cgi (>= 0.3.3)
     erubi (1.13.1)
-    et-orbi (1.2.11)
+    et-orbi (1.3.0)
       tzinfo
-    exception_notification (5.0.0)
+    exception_notification (5.0.1)
       actionmailer (>= 7.1, < 9)
       activesupport (>= 7.1, < 9)
     factory_bot (6.5.4)
@@ -140,18 +142,18 @@ GEM
     hashdiff (1.2.0)
     i18n (1.14.7)
       concurrent-ruby (~> 1.0)
-    importmap-rails (2.1.0)
+    importmap-rails (2.2.2)
       actionpack (>= 6.0.0)
       activesupport (>= 6.0.0)
       railties (>= 6.0.0)
-    io-console (0.8.0)
+    io-console (0.8.1)
     irb (1.14.3)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
     jbuilder (2.13.0)
       actionview (>= 5.0.0)
       activesupport (>= 5.0.0)
-    json (2.9.1)
+    json (2.13.2)
     kaminari (1.2.2)
       activesupport (>= 4.1.0)
       kaminari-actionview (= 1.2.2)
@@ -165,10 +167,8 @@ GEM
       kaminari-core (= 1.2.2)
     kaminari-core (1.2.2)
     language_server-protocol (3.17.0.5)
-    launchy (3.1.1)
+    launchy (2.5.2)
       addressable (~> 2.8)
-      childprocess (~> 5.0)
-      logger (~> 1.6)
     letter_opener (1.10.0)
       launchy (>= 2.2, < 4)
     letter_opener_web (3.0.0)
@@ -188,10 +188,9 @@ GEM
       net-smtp
     marcel (1.0.4)
     matrix (0.4.3)
-    method_source (1.1.0)
     mini_mime (1.1.5)
     minitest (5.25.5)
-    mission_control-jobs (1.0.2)
+    mission_control-jobs (1.1.0)
       actioncable (>= 7.1)
       actionpack (>= 7.1)
       activejob (>= 7.1)
@@ -212,32 +211,47 @@ GEM
     net-smtp (0.5.1)
       net-protocol
     nio4r (2.7.4)
-    nokogiri (1.18.8-aarch64-linux-gnu)
+    nokogiri (1.18.9-aarch64-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.18.8-arm64-darwin)
+    nokogiri (1.18.9-aarch64-linux-musl)
       racc (~> 1.4)
-    nokogiri (1.18.8-x86_64-linux-gnu)
+    nokogiri (1.18.9-arm-linux-gnu)
+      racc (~> 1.4)
+    nokogiri (1.18.9-arm-linux-musl)
+      racc (~> 1.4)
+    nokogiri (1.18.9-arm64-darwin)
+      racc (~> 1.4)
+    nokogiri (1.18.9-x86_64-darwin)
+      racc (~> 1.4)
+    nokogiri (1.18.9-x86_64-linux-gnu)
+      racc (~> 1.4)
+    nokogiri (1.18.9-x86_64-linux-musl)
       racc (~> 1.4)
     parallel (1.27.0)
-    parser (3.3.8.0)
+    parser (3.3.9.0)
       ast (~> 2.4.1)
       racc
-    pg (1.5.9)
+    pg (1.6.1)
+    pg (1.6.1-aarch64-linux)
+    pg (1.6.1-aarch64-linux-musl)
+    pg (1.6.1-arm64-darwin)
+    pg (1.6.1-x86_64-darwin)
+    pg (1.6.1-x86_64-linux)
+    pg (1.6.1-x86_64-linux-musl)
     prism (1.4.0)
-    propshaft (1.1.0)
+    propshaft (1.2.1)
       actionpack (>= 7.0.0)
       activesupport (>= 7.0.0)
       rack
-      railties (>= 7.0.0)
     psych (5.2.2)
       date
       stringio
     public_suffix (6.0.2)
-    puma (6.6.0)
+    puma (6.6.1)
       nio4r (~> 2.0)
     raabro (1.4.0)
     racc (1.8.1)
-    rack (3.1.16)
+    rack (3.2.0)
     rack-session (2.1.1)
       base64 (>= 0.1.0)
       rack (>= 3.0.0)
@@ -280,13 +294,14 @@ GEM
       activerecord (>= 6.1.5)
       activesupport (>= 6.1.5)
       i18n
-    rdoc (6.10.0)
+    rdoc (6.14.0)
+      erb
       psych (>= 4.0.0)
-    regexp_parser (2.10.0)
+    regexp_parser (2.11.0)
     reline (0.6.0)
       io-console (~> 0.5)
     rexml (3.4.1)
-    ridgepole (3.0.2)
+    ridgepole (3.0.3)
       activerecord (>= 6.1, < 8.1)
       diffy
       logger
@@ -307,7 +322,7 @@ GEM
       rspec-mocks (~> 3.13)
       rspec-support (~> 3.13)
     rspec-support (3.13.4)
-    rubocop (1.78.0)
+    rubocop (1.79.2)
       json (~> 2.3)
       language_server-protocol (~> 3.17.0.2)
       lint_roller (~> 1.1.0)
@@ -315,22 +330,22 @@ GEM
       parser (>= 3.3.0.2)
       rainbow (>= 2.2.2, < 4.0)
       regexp_parser (>= 2.9.3, < 3.0)
-      rubocop-ast (>= 1.45.1, < 2.0)
+      rubocop-ast (>= 1.46.0, < 2.0)
       ruby-progressbar (~> 1.7)
       unicode-display_width (>= 2.4.0, < 4.0)
-    rubocop-ast (1.45.1)
+    rubocop-ast (1.46.0)
       parser (>= 3.3.7.2)
       prism (~> 1.4)
     ruby-progressbar (1.13.0)
-    rubyzip (2.4.1)
+    rubyzip (3.0.0)
     securerandom (0.4.1)
     seed-fu (2.3.9)
       activerecord (>= 3.1)
       activesupport (>= 3.1)
-    selenium-webdriver (4.10.0)
+    selenium-webdriver (4.1.0)
+      childprocess (>= 0.5, < 5.0)
       rexml (~> 3.2, >= 3.2.5)
-      rubyzip (>= 1.2.2, < 3.0)
-      websocket (~> 1.0)
+      rubyzip (>= 1.2.2)
     slack-notifier (2.4.0)
     solid_cable (3.0.11)
       actioncable (>= 7.2)
@@ -341,27 +356,33 @@ GEM
       activejob (>= 7.2)
       activerecord (>= 7.2)
       railties (>= 7.2)
-    solid_queue (1.1.5)
+    solid_queue (1.2.1)
       activejob (>= 7.1)
       activerecord (>= 7.1)
       concurrent-ruby (>= 1.3.1)
       fugit (~> 1.11.0)
       railties (>= 7.1)
-      thor (~> 1.3.1)
+      thor (>= 1.3.1)
     stimulus-rails (1.3.4)
       railties (>= 6.0.0)
     stringio (3.1.2)
     tailwindcss-rails (4.3.0)
       railties (>= 7.0.0)
       tailwindcss-ruby (~> 4.0)
+    tailwindcss-ruby (4.1.11)
     tailwindcss-ruby (4.1.11-aarch64-linux-gnu)
+    tailwindcss-ruby (4.1.11-aarch64-linux-musl)
     tailwindcss-ruby (4.1.11-arm64-darwin)
+    tailwindcss-ruby (4.1.11-x86_64-darwin)
     tailwindcss-ruby (4.1.11-x86_64-linux-gnu)
-    temple (0.10.3)
-    thor (1.3.2)
-    thruster (0.1.14-aarch64-linux)
-    thruster (0.1.14-arm64-darwin)
-    thruster (0.1.14-x86_64-linux)
+    tailwindcss-ruby (4.1.11-x86_64-linux-musl)
+    temple (0.10.4)
+    thor (1.4.0)
+    thruster (0.1.15)
+    thruster (0.1.15-aarch64-linux)
+    thruster (0.1.15-arm64-darwin)
+    thruster (0.1.15-x86_64-darwin)
+    thruster (0.1.15-x86_64-linux)
     tilt (2.6.1)
     timeout (0.4.3)
     turbo-rails (2.0.16)
@@ -375,10 +396,9 @@ GEM
     uniform_notifier (1.17.0)
     uri (1.0.3)
     useragent (0.16.11)
-    view_component (3.23.2)
-      activesupport (>= 5.2.0, < 8.1)
+    view_component (4.0.1)
+      activesupport (>= 7.1.0, < 8.1)
       concurrent-ruby (~> 1)
-      method_source (~> 1.0)
     web-console (4.2.1)
       actionview (>= 6.0.0)
       activemodel (>= 6.0.0)
@@ -392,7 +412,6 @@ GEM
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
-    websocket (1.2.11)
     websocket-driver (0.8.0)
       base64
       websocket-extensions (>= 0.1.0)
@@ -402,9 +421,15 @@ GEM
     zeitwerk (2.7.3)
 
 PLATFORMS
-  aarch64-linux
-  arm64-darwin-24
+  aarch64-linux-gnu
+  aarch64-linux-musl
+  arm-linux-gnu
+  arm-linux-musl
+  arm64-darwin
+  x86_64-darwin
   x86_64-linux
+  x86_64-linux-gnu
+  x86_64-linux-musl
 
 DEPENDENCIES
   bcrypt (~> 3.1.20)
@@ -412,24 +437,25 @@ DEPENDENCIES
   brakeman (~> 7.1.0)
   bullet
   capybara
+  cgi (= 0.4.2)
   debug
+  erb (= 4.0.4)
   exception_notification
   factory_bot_rails
   haml-rails
   importmap-rails
   irb (= 1.14.3)
   jbuilder
-  json (= 2.9.1)
   kaminari
   letter_opener_web
   mission_control-jobs
-  pg (~> 1.5)
+  pg (~> 1.6.1)
   propshaft
   psych (= 5.2.2)
-  puma (>= 6.4)
+  puma (>= 6.6.1)
   rails (~> 8.0.2)
   ransack
-  rdoc (= 6.10.0)
+  rdoc (= 6.14.0)
   reline (= 0.6.0)
   ridgepole
   rspec-rails
@@ -452,7 +478,7 @@ DEPENDENCIES
   webmock
 
 RUBY VERSION
-   ruby 3.4.4p34
+   ruby 3.4.5p51
 
 BUNDLED WITH
-   2.6.8
+   2.7.1

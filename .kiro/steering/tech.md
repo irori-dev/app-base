@@ -2,7 +2,7 @@
 
 ## Core Technologies
 
-- **Ruby 3.4.4** / **Rails 8.0.2**
+- **Ruby 3.4.5** / **Rails 8.0.2**
 - **PostgreSQL 16** - Primary database for all environments
 - **Solid Suite** - Database-backed alternatives to Redis/Sidekiq
   - Solid Cache - Caching layer

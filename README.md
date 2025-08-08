@@ -17,7 +17,7 @@ clone後に`.git`を削除して、新規アプリケーションのベースと
 
 ### コア技術
 
-- **Ruby 3.4.4** / **Rails 8.0.2**
+- **Ruby 3.4.5** / **Rails 8.0.2**
 - **PostgreSQL 16** - 全環境統一のデータベース
 - **Solid Suite** - Redis/Sidekiqの代替となるデータベースベースソリューション
   - Solid Cache - キャッシュレイヤー
@@ -56,7 +56,7 @@ bin/dev
 
 ## 開発環境
 
-- Ruby 3.4.4 / Rails 8.0.2
+- Ruby 3.4.5 / Rails 8.0.2
 - Docker Compose
 - VS Code の DevContainer 対応
 

@@ -8,9 +8,9 @@ gem "rails", "~> 8.0.2"
 # The modern asset pipeline for Rails [https://github.com/rails/propshaft]
 gem "propshaft"
 # Use postgresql as the database for Active Record
-gem "pg", "~> 1.5"
+gem "pg", "~> 1.6.1"
 # Use the Puma web server [https://github.com/puma/puma]
-gem "puma", ">= 6.4"
+gem "puma", ">= 6.6.1"
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
 gem "importmap-rails"
 # Hotwire's SPA-like page accelerator [https://turbo.hotwired.dev]
@@ -26,7 +26,7 @@ gem "jbuilder"
 gem "bcrypt", "~> 3.1.20"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
-gem "tzinfo-data", platforms: %i[ mingw mswin x64_mingw jruby ]
+gem "tzinfo-data", platforms: %i[ windows jruby ]
 
 # Use the database-backed adapters for Rails.cache, Active Job, and Action Cable
 gem "solid_cache"
@@ -46,7 +46,7 @@ gem "mission_control-jobs"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
-  gem "debug", platforms: %i[ mri mingw x64_mingw ], require: "debug/prelude"
+  gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
 
   # Static analysis for security vulnerabilities [https://brakemanscanner.org/]
   gem "brakeman", "~> 7.1.0", require: false
@@ -95,7 +95,8 @@ gem "letter_opener_web"
 # downgrade
 gem "stringio", "3.1.2"
 gem "psych", "5.2.2"
-gem "rdoc", "6.10.0"
+gem "rdoc", "6.14.0"
 gem "reline", "0.6.0"
 gem "irb", "1.14.3"
-gem "json", "2.9.1"
+gem "erb", "4.0.4"
+gem "cgi", "0.4.2"
