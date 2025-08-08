@@ -1,0 +1,107 @@
+default: &default
+  cloudwatch:
+    enabled: false
+    region: <%= ENV.fetch('AWS_REGION', 'ap-northeast-1') %>
+    log_group_prefix: '/aws/rails'
+    retention_days: 7
+    batch_size: 10000
+    batch_time: 5000
+    max_threads: 5
+
+development:
+  <<: *default
+  cloudwatch:
+    enabled: false
+
+test:
+  <<: *default
+  cloudwatch:
+    enabled: false
+
+production:
+  <<: *default
+  cloudwatch:
+    enabled: true
+    log_group: <%= ENV.fetch('CLOUDWATCH_LOG_GROUP', "/aws/rails/#{Rails.application.class.module_parent_name.underscore}-production") %>
+    log_stream: <%= ENV.fetch('CLOUDWATCH_LOG_STREAM', "rails-app-#{ENV.fetch('HOSTNAME', 'unknown')}") %>
+    region: <%= ENV.fetch('AWS_REGION', 'ap-northeast-1') %>
+    retention_days: 30
+    batch_size: 10000
+    batch_time: 5000
+    max_threads: 10
+    
+  # X-Ray configuration
+  xray:
+    enabled: <%= ENV.fetch('XRAY_ENABLED', 'true') %>
+    daemon_address: <%= ENV.fetch('XRAY_DAEMON_ADDRESS', '127.0.0.1:2000') %>
+    context_missing: 'log_error'
+    sampling_rate: <%= ENV.fetch('XRAY_SAMPLING_RATE', '0.1').to_f %>
+    
+  # CloudWatch Alarms configuration
+  alarms:
+    error_rate:
+      enabled: true
+      metric_name: 'ErrorRate'
+      namespace: <%= "#{Rails.application.class.module_parent_name}/Rails" %>
+      threshold: 5.0
+      comparison_operator: 'GreaterThanThreshold'
+      evaluation_periods: 2
+      period: 300
+      statistic: 'Average'
+      treat_missing_data: 'notBreaching'
+      
+    response_time:
+      enabled: true
+      metric_name: 'ResponseTime'
+      namespace: <%= "#{Rails.application.class.module_parent_name}/Rails" %>
+      threshold: 2000
+      comparison_operator: 'GreaterThanThreshold'
+      evaluation_periods: 3
+      period: 300
+      statistic: 'Average'
+      treat_missing_data: 'notBreaching'
+      
+    memory_usage:
+      enabled: true
+      metric_name: 'MemoryUsage'
+      namespace: <%= "#{Rails.application.class.module_parent_name}/Rails" %>
+      threshold: 500
+      comparison_operator: 'GreaterThanThreshold'
+      evaluation_periods: 2
+      period: 300
+      statistic: 'Maximum'
+      treat_missing_data: 'notBreaching'
+      
+    slow_queries:
+      enabled: true
+      metric_name: 'SlowQueryCount'
+      namespace: <%= "#{Rails.application.class.module_parent_name}/Rails" %>
+      threshold: 10
+      comparison_operator: 'GreaterThanThreshold'
+      evaluation_periods: 1
+      period: 300
+      statistic: 'Sum'
+      treat_missing_data: 'notBreaching'
+      
+    job_failures:
+      enabled: true
+      metric_name: 'JobFailureCount'
+      namespace: <%= "#{Rails.application.class.module_parent_name}/Rails" %>
+      threshold: 5
+      comparison_operator: 'GreaterThanThreshold'
+      evaluation_periods: 1
+      period: 300
+      statistic: 'Sum'
+      treat_missing_data: 'notBreaching'
+
+staging:
+  <<: *default
+  cloudwatch:
+    enabled: <%= ENV.fetch('CLOUDWATCH_ENABLED', 'true') %>
+    log_group: <%= ENV.fetch('CLOUDWATCH_LOG_GROUP', "/aws/rails/#{Rails.application.class.module_parent_name.underscore}-staging") %>
+    log_stream: <%= ENV.fetch('CLOUDWATCH_LOG_STREAM', "rails-app-#{ENV.fetch('HOSTNAME', 'unknown')}") %>
+    region: <%= ENV.fetch('AWS_REGION', 'ap-northeast-1') %>
+    retention_days: 14
+    batch_size: 10000
+    batch_time: 5000
+    max_threads: 5

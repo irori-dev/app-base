@@ -4,6 +4,7 @@ class Admins::BaseController < ApplicationController
 
   before_action :prepare_exception_notifier
   before_action :require_admin!
+  before_action :set_admin_logging_context
 
   layout 'admins'
 
@@ -36,6 +37,20 @@ class Admins::BaseController < ApplicationController
     request.env['exception_notifier.exception_data'] = {
       current_admin_id: current_admin&.id,
     }
+  end
+
+  def set_admin_logging_context
+    # Override user context with admin context
+    Thread.current[:current_user_id] = "admin_#{current_admin&.id}" if current_admin
+    Thread.current[:controller_name] = controller_name
+    Thread.current[:action_name] = action_name
+    Thread.current[:filtered_params] = filtered_params_for_logging
+  end
+
+  def filtered_params_for_logging
+    params.to_unsafe_h.except(:controller, :action, :authenticity_token)
+  rescue StandardError
+    {}
   end
 
 end
