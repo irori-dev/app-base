@@ -28,7 +28,7 @@ jobs:
 
       # テストワークフローの実行を待つ
       - name: Wait for test workflow
-        uses: lewagon/wait-on-check-action@v1.3.4
+        uses: lewagon/wait-on-check-action@v1.4.0
         with:
           ref: ${{ github.ref }}
           check-name: 'test'
@@ -36,7 +36,7 @@ jobs:
           wait-interval: 10
 
       - name: Wait for docker-build workflow
-        uses: lewagon/wait-on-check-action@v1.3.4
+        uses: lewagon/wait-on-check-action@v1.4.0
         with:
           ref: ${{ github.ref }}
           check-name: 'docker-build'
