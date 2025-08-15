@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "Bash(bin/rspec)",
+      "Bash(git add:*)",
+      "Bash(git restore:*)",
+      "Bash(git push:*)",
+      "Bash(docker compose exec:*)",
+      "Bash(docker compose:*)",
+      "Bash(bin/rspec --format progress)",
+      "Bash(find:*)",
+      "Bash(rg:*)",
+      "Bash(bin/rubocop:*)",
+      "Bash(bin/rspec:*)",
+      "Bash(grep:*)",
+      "Bash(bin/rails:*)",
+      "Bash(mv:*)",
+      "Bash(bundle install:*)",
+      "Bash(mkdir:*)",
+      "Bash(rm:*)",
+      "Bash(DATABASE_URL:*)",
+      "Bash(docker build:*)",
+      "Bash(RAILS_ENV=production SECRET_KEY_BASE=dummy DATABASE_URL=postgresql://dummy:dummy@localhost/dummy bin/rails assets:precompile --trace)",
+      "Bash(RAILS_ENV=test DATABASE_URL=postgres://postgres:password@db:5432/app_base_test bin/rails db:drop db:create)",
+      "Bash(RAILS_ENV=test DATABASE_URL=postgres://postgres:password@db:5432/app_base_test bin/rails ridgepole:apply DATABASE=primary)",
+      "Bash(RAILS_ENV=test DATABASE_URL=postgres://postgres:password@db:5432/app_base_test bin/rspec --fail-fast)",
+      "Bash(chmod:*)",
+      "Bash(CI=true bin/rspec spec/system/user_registration_login_spec.rb:9 --fail-fast)",
+      "Bash(CI=true bin/rspec spec/requests/admins/admins_spec.rb:18 --fail-fast)",
+      "Bash(curl:*)",
+      "Bash(LOG_LEVEL=fatal docker compose exec -e LOG_LEVEL=fatal app bin/rspec spec/requests/admins/sessions_spec.rb:8 --fail-fast)"
+    ],
+    "deny": []
+  },
+  "enableAllProjectMcpServers": false
+}
