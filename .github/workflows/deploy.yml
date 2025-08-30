@@ -18,13 +18,14 @@ on:
 permissions:
   id-token: write     # OIDC を使うなら必須
   contents: read
+  checks: read
 
 jobs:
   # アプリケーションのビルド・継続的デプロイ
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # テストワークフローの実行を待つ
       - name: Wait for test workflow
@@ -91,10 +92,10 @@ jobs:
           
           # Use latest tag for ECS deployment to avoid unnecessary task definition revisions
           # Comment out the next line and uncomment the line after if you want to use commit-specific tags
-          echo "IMAGE_URI=$REGISTRY/$REPO:latest" >> $GITHUB_ENV
-          # echo "IMAGE_URI=$REGISTRY/$REPO:$TAG" >> $GITHUB_ENV
+          # echo "IMAGE_URI=$REGISTRY/$REPO:latest" >> $GITHUB_ENV
+          echo "IMAGE_URI=$REGISTRY/$REPO:$TAG" >> $GITHUB_ENV
           
-          echo "✅ Docker image URI set for deployment: $REGISTRY/$REPO:latest"
+          echo "✅ Docker image URI set for deployment: $REGISTRY/$REPO:$TAG"
 
       # インフラ存在確認
       - name: Check if infrastructure exists

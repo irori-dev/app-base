@@ -96,6 +96,8 @@ Resources:
             Principal:
               Service: ecs-tasks.amazonaws.com
             Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::435917083888:policy/ECSExecSSMMessages
 
   # ALB Target Group
   AppTargetGroup:

@@ -7,9 +7,12 @@ Parameters:
   AppPort:
     Type: Number
     Default: 3000
+  DesiredCount:
+    Type: Number
+    Default: 2    
   ImageUri:
     Type: String
-    Description: Container image URI (use latest tag for consistent deployments without unnecessary revisions)
+    Description: Container image URI
   InfraStackName:
     Type: String
     Description: Infrastructure stack name for cross-stack references
@@ -114,7 +117,9 @@ Resources:
       Cluster: 
         Ref: ECSClusterName
       LaunchType: FARGATE
-      DesiredCount: 1
+      EnableExecuteCommand: true
+      DesiredCount: 
+        Ref: DesiredCount
       TaskDefinition: 
         Ref: AppTaskDef
       NetworkConfiguration:
