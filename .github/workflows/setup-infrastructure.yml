@@ -18,12 +18,13 @@ on:
 permissions:
   id-token: write
   contents: read
+  checks: read
 
 jobs:
   setup-infrastructure:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Extract application name from repository
         id: app-name
@@ -126,6 +127,7 @@ jobs:
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
         with:
+          method: chat.postMessage
           channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
           payload: |
             {
