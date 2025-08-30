@@ -1,6 +1,7 @@
 class Admins::AdminCard::Component < ViewComponent::Base
 
   include Turbo::FramesHelper
+
   with_collection_parameter :admin
 
   def initialize(admin:, current_admin:)
