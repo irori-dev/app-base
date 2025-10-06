@@ -294,9 +294,10 @@ GEM
       activerecord (>= 6.1.5)
       activesupport (>= 6.1.5)
       i18n
-    rdoc (6.14.0)
+    rdoc (6.15.0)
       erb
       psych (>= 4.0.0)
+      tsort
     regexp_parser (2.11.0)
     reline (0.6.0)
       io-console (~> 0.5)
@@ -385,6 +386,7 @@ GEM
     thruster (0.1.15-x86_64-linux)
     tilt (2.6.1)
     timeout (0.4.3)
+    tsort (0.2.0)
     turbo-rails (2.0.16)
       actionpack (>= 7.1.0)
       railties (>= 7.1.0)
@@ -455,7 +457,7 @@ DEPENDENCIES
   puma (>= 6.6.1)
   rails (~> 8.0.2)
   ransack
-  rdoc (= 6.14.0)
+  rdoc (= 6.15.0)
   reline (= 0.6.0)
   ridgepole
   rspec-rails
