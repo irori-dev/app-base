@@ -18,7 +18,6 @@ local:
 google:
   service: GCS
   project: workshop-app-base
-  credentials: <%= Rails.root.join("path/to/gcs.keyfile") %>
   bucket: app-base
 
 # Use bin/rails credentials:edit to set the Azure Storage secret (as azure_storage:storage_access_key)
