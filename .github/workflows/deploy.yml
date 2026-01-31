@@ -135,6 +135,8 @@ jobs:
               AppName=${{ github.event.repository.name }} \
               ImageUri=$IMAGE_URI \
               InfraStackName=${{ steps.check-infra.outputs.infra-stack-name }} \
+              Cpu=${{ env.ECS_CPU || '256' }} \
+              Memory=${{ env.ECS_MEMORY || '512' }} \
             --capabilities CAPABILITY_IAM
           
           echo "✅ Application deployment completed"

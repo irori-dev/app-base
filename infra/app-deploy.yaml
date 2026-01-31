@@ -27,6 +27,14 @@ Parameters:
   FargateSgId:
     Type: String
     Default: sg-074598d362d105f42
+  Cpu:
+    Type: String
+    Default: '256'
+    Description: ECS Task CPU units (256, 512, 1024, 2048, 4096)
+  Memory:
+    Type: String
+    Default: '512'
+    Description: ECS Task Memory (512, 1024, 2048, ..., 30720)
 
 Resources:
   # ECS Task Definition
@@ -35,8 +43,10 @@ Resources:
     Properties:
       Family:
         Fn::Sub: "${AppName}-task-def"
-      Cpu: '1024'
-      Memory: '3072'
+      Cpu: 
+        Ref: Cpu
+      Memory: 
+        Ref: Memory
       NetworkMode: awsvpc
       RequiresCompatibilities: [FARGATE]
       ExecutionRoleArn: 
