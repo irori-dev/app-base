@@ -49,7 +49,7 @@ group :development, :test do
   gem "debug", platforms: %i[ mri mswin mingw x64_mingw ], require: "debug/prelude"
 
   # Static analysis for security vulnerabilities [https://brakemanscanner.org/]
-  gem "brakeman", "~> 7.1.0", require: false
+  gem "brakeman", "~> 8.0", require: false
   gem "rubocop"
 end
 
