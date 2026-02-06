@@ -11,6 +11,7 @@ module Myapp
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 8.0
     config.active_job.queue_adapter = :solid_queue
+    config.solid_queue.connects_to = { database: { writing: :queue, reading: :queue } }
     config.mission_control.jobs.base_controller_class = "Admins::BaseController"
 
     config.time_zone = "Tokyo"
