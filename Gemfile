@@ -100,3 +100,6 @@ gem "reline", "0.6.0"
 gem "irb", "1.14.3"
 gem "erb", "4.0.4"
 gem "cgi", "0.4.2"
+
+# For Google Cloud Storage (ActiveStorage)
+gem "google-cloud-storage", "~> 1.44"

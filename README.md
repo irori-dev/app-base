@@ -118,6 +118,38 @@ Hotwire(Turbo/Stimulus) と importmap を利用しているため
 
 `rails credentials` を利用します。`config/master.key` を取得して配置してください。
 
+### ログ管理
+
+#### 本番環境（Cloud Run）
+
+- **出力先**: STDOUTのみ
+- **ログ収集**: Google Cloud Loggingが自動収集
+- **ログ確認**:
+  ```bash
+  # Cloud Consoleでログを確認
+  gcloud logging read \
+    'resource.type="cloud_run_revision" AND resource.labels.service_name="app-base"' \
+    --limit=100
+
+  # エラーのみ
+  gcloud logging read \
+    'severity>=ERROR' \
+    --limit=50
+  ```
+- **保持期間**: Cloud Loggingのログバケット設定で管理
+
+#### 開発環境
+
+- **出力先**: STDOUT（デフォルト）またはファイル
+- **ファイル出力**:
+  ```bash
+  LOG_TO_FILE=1 bin/rails server
+  # log/development.log に出力
+  ```
+- **ログレベル**: `debug`（詳細なデバッグ情報を出力）
+
+詳細は [`docs/logging_infrastructure.md`](docs/logging_infrastructure.md) を参照してください。
+
 ### N+1クエリ検出
 
 開発環境では [Bullet](https://github.com/flyerhzm/bullet) が有効になっており、

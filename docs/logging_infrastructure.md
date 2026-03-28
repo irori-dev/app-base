@@ -2,7 +2,7 @@
 
 ## 概要
 
-このドキュメントでは、Rails アプリケーションに実装された包括的なログ基盤について説明します。この基盤は構造化ログ、パフォーマンス監視、エラートラッキング、AWS 統合を提供します。
+このドキュメントでは、Rails アプリケーションに実装された包括的なログ基盤について説明します。この基盤は構造化ログ、パフォーマンス監視、エラートラッキング、Google Cloud Logging 統合を提供します。
 
 ## 主要機能
 
@@ -35,11 +35,12 @@
 - Slack 通知
 - セキュリティイベントの記録
 
-### 5. AWS 統合
+### 5. Google Cloud Logging 統合
 
-- CloudWatch Logs への自動転送
-- X-Ray による分散トレーシング
-- CloudWatch Alarms でのアラート
+- Cloud Logging への自動転送（STDOUTベース）
+- ログバケットによる保持期間管理
+- Cloud Monitoring でのアラート
+- ログエクスプローラーでの高度な検索
 
 ## 使用方法
 
@@ -148,38 +149,31 @@ LoggingInfrastructure::ErrorHandler.log_suspicious_activity(
 LOG_LEVEL=info
 
 # ログ出力先
-LOG_TO_FILE=true
-LOG_TO_STDOUT=true
+LOG_TO_FILE=true        # 開発環境のみ有効
+LOG_TO_STDOUT=true      # 本番環境はデフォルトでSTDOUT
 
-# AWS CloudWatch（production 環境）
-AWS_REGION=ap-northeast-1
-CLOUDWATCH_LOG_GROUP=/aws/rails/myapp-production
-CLOUDWATCH_LOG_STREAM=rails-app-hostname
-
-# AWS X-Ray
-XRAY_ENABLED=true
-XRAY_DAEMON_ADDRESS=127.0.0.1:2000
-XRAY_SAMPLING_RATE=0.1
+# 本番環境（Cloud Run）
+# STDOUTへの出力のみ使用し、Google Cloud Loggingが自動収集
+RAILS_ENV=production
 ```
 
 ### Rails 設定
 
 設定は `config/initializers/logging_infrastructure.rb` で自動的に読み込まれます。
 
-### AWS 設定
+### Cloud Run 環境での動作
 
-AWS 関連の設定は `config/aws_logging.yml` で管理されます：
+本番環境（Cloud Run）では以下の仕組みでログを管理します:
 
-```yaml
-production:
-  cloudwatch:
-    enabled: true
-    log_group: /aws/rails/myapp-production
-    retention_days: 30
-  xray:
-    enabled: true
-    sampling_rate: 0.1
 ```
+Rails App → STDOUT → Cloud Run Runtime → Google Cloud Logging
+```
+
+**特徴**:
+- ログローテーション不要（Cloud Loggingで自動管理）
+- ファイルシステムへの書き込み不要（コンテナは一時的）
+- ログ保持期間はCloud Loggingのログバケット設定で管理
+- ログ検索・分析はCloud Consoleで実施
 
 ## ログフォーマット
 
@@ -303,61 +297,82 @@ Rails.logger.info("Operation completed", {
 })
 ```
 
-## CloudWatch での分析
+## Google Cloud Logging での分析
 
-### ログの検索
+### ログの確認
 
-CloudWatch Logs Insights で以下のクエリを使用：
+```bash
+# 基本的なログ取得
+gcloud logging read \
+  'resource.type="cloud_run_revision" AND resource.labels.service_name="app-base"' \
+  --limit=100 \
+  --format=json
 
-```sql
--- エラーログの検索
-fields @timestamp, message, error.class, error.message
-| filter level = "error"
-| sort @timestamp desc
+# エラーログのみ
+gcloud logging read \
+  'resource.type="cloud_run_revision" AND severity>=ERROR' \
+  --limit=50
 
--- 特定ユーザーの活動
-fields @timestamp, message, request.path, response.status
-| filter user_id = 12345
-| sort @timestamp desc
+# 時間範囲指定
+gcloud logging read \
+  'timestamp>="2024-11-01T00:00:00Z" AND timestamp<"2024-11-02T00:00:00Z"' \
+  --limit=100
 
--- 遅いリクエストの検索
-fields @timestamp, request.path, response.duration_ms
-| filter response.duration_ms > 1000
-| sort response.duration_ms desc
-
--- 相関 ID での追跡
-fields @timestamp, level, message
-| filter correlation_id = "req_abc123def456"
-| sort @timestamp asc
+# 特定ユーザーの活動
+gcloud logging read \
+  'jsonPayload.user_id="12345"' \
+  --limit=50
 ```
 
-### メトリクスフィルター
+### ログエクスプローラーでの検索
 
-以下のメトリクスが自動的に抽出されます：
+Cloud Console > Logging > ログエクスプローラー で以下のクエリを使用:
 
-- エラー率
-- 平均応答時間
-- メモリ使用量
-- スロークエリ数
-- ジョブ失敗数
+```
+# エラーログの検索
+resource.type="cloud_run_revision"
+severity>=ERROR
+
+# 特定パスへのリクエスト
+resource.type="cloud_run_revision"
+jsonPayload.request.path="/api/users"
+
+# 遅いリクエストの検索
+resource.type="cloud_run_revision"
+jsonPayload.response.duration_ms>1000
+
+# 相関IDでの追跡
+resource.type="cloud_run_revision"
+jsonPayload.correlation_id="req_abc123def456"
+```
+
+### メトリクスの作成
+
+以下のメトリクスをCloud Monitoringで作成できます:
+
+- エラー率: `severity>=ERROR` のカウント
+- 平均応答時間: `jsonPayload.response.duration_ms` の平均
+- リクエスト数: すべてのログエントリのカウント
+- スロークエリ数: `jsonPayload.database.query_duration_ms>100` のカウント
 
 ## セキュリティ考慮事項
 
 1. **機密データの自動フィルタリング**: パスワード、トークン、クレジットカード番号などは自動的に除外
-2. **アクセス制限**: CloudWatch Logs へのアクセスは IAM で制限
-3. **ログの保持期間**: 本番環境では 30 日、ステージング環境では 14 日
-4. **暗号化**: CloudWatch Logs は保管時に暗号化
+2. **アクセス制限**: Cloud Logging へのアクセスは IAM で制限
+3. **ログの保持期間**: ログバケット設定で管理（デフォルト30日）
+4. **暗号化**: Cloud Logging は保管時・転送時に自動暗号化
 
 ## パフォーマンス最適化
 
-1. **非同期ログ出力**: 高負荷時は非同期ログ出力を検討
-2. **バッチング**: CloudWatch への送信はバッチ処理
-3. **サンプリング**: X-Ray トレーシングは 10% サンプリング
-4. **ログレベル調整**: 本番環境では info レベル以上のみ
+1. **STDOUT出力**: 本番環境ではファイルI/Oを削減
+2. **構造化ログ**: JSON形式で効率的な検索・分析
+3. **ログレベル調整**: 本番環境では info レベル以上のみ
+4. **非同期処理**: 高負荷時のログ出力の影響を最小化
 
 ## 今後の拡張
 
-- Elasticsearch 統合
-- カスタムダッシュボード
-- 機械学習による異常検知
-- ログの長期アーカイブ
+- カスタムダッシュボード（Cloud Monitoring）
+- アラートポリシーの追加
+- ログベースのメトリクス作成
+- BigQuery へのログエクスポート（長期保存・分析）
+- Error Reporting 統合

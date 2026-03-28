@@ -5,11 +5,6 @@ ARG RUBY_VERSION=3.4.5
 ARG BUNDLER_VERSION=2.7.1
 FROM registry.docker.com/library/ruby:$RUBY_VERSION-slim as base
 ARG BUNDLER_VERSION
-ARG RAILS_MASTER_KEY
-ARG DATABASE_URL
-ARG CACHE_DATABASE_URL
-ARG QUEUE_DATABASE_URL
-ARG RAILS_ENV
 
 # Rails app lives here
 WORKDIR /rails
@@ -19,11 +14,6 @@ ENV BUNDLE_DEPLOYMENT="1" \
     BUNDLE_PATH="/usr/local/bundle" \
     BUNDLE_WITHOUT="development" \
     RAILS_SERVE_STATIC_FILES="true" \
-    RAILS_ENV=${RAILS_ENV} \
-    RAILS_MASTER_KEY=${RAILS_MASTER_KEY} \
-    DATABASE_URL=${DATABASE_URL} \
-    CACHE_DATABASE_URL=${CACHE_DATABASE_URL} \
-    QUEUE_DATABASE_URL=${QUEUE_DATABASE_URL} \
     BUNDLER_VERSION=${BUNDLER_VERSION}
 
 # Throw-away build stage to reduce size of final image
@@ -71,12 +61,9 @@ COPY --from=build /rails /rails
 
 # Run and own only the runtime files as a non-root user for security
 RUN useradd rails --create-home --shell /bin/bash && \
-    chown -R rails:rails db log storage tmp
+    chown -R rails:rails db log tmp
 USER rails:rails
 
-# Entrypoint prepares the database.
-ENTRYPOINT ["/rails/bin/docker-entrypoint"]
-
-# Start the server by default, this can be overwritten at runtime
-EXPOSE 3000
-CMD ["./bin/rails", "server"]
+# Cloud Run向けにENTRYPOINT削除、PORT対応
+EXPOSE 8080
+CMD ["bash", "-c", "bundle exec rails server -b 0.0.0.0 -p ${PORT:-8080}"]

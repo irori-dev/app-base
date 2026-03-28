@@ -1,33 +1,29 @@
 default: &default
   adapter: postgresql
   encoding: unicode
-  # For details on connection pooling, see Rails configuration guide
-  # https://guides.rubyonrails.org/configuring.html#database-pooling
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  username: postgres
-  password: password
-  host: db
 
 development:
   primary:
     <<: *default
     database: app_development
+    username: postgres
+    password: password
+    host: db
   cache:
     <<: *default
     database: cache_development
+    username: postgres
+    password: password
+    host: db
   queue:
     <<: *default
     database: queue_development
+    username: postgres
+    password: password
+    host: db
 
 test:
-  <% if ENV['DATABASE_URL'].present? %>
-  primary:
-    url: <%= ENV['DATABASE_URL'] %>
-  cache:
-    url: <%= ENV['DATABASE_URL'].sub(/app_base_test/, 'cache_test') %>
-  queue:
-    url: <%= ENV['DATABASE_URL'].sub(/app_base_test/, 'queue_test') %>
-  <% else %>
   primary:
     <<: *default
     database: app_test
@@ -37,26 +33,43 @@ test:
   queue:
     <<: *default
     database: queue_test
-  <% end %>
 
 staging:
   primary:
     <<: *default
-    url: <%= ENV['DATABASE_URL'] %>
+    database: app_staging
+    username: postgres
+    password: <%= ENV["DATABASE_PASSWORD"] %>
+    host: /cloudsql/workshop-app-base:asia-northeast1:app-base
   cache:
     <<: *default
-    url: <%= ENV['CACHE_DATABASE_URL'] %>
+    database: cache_staging
+    username: postgres
+    password: <%= ENV["DATABASE_PASSWORD"] %>
+    host: /cloudsql/workshop-app-base:asia-northeast1:app-base
   queue:
     <<: *default
-    url: <%= ENV['QUEUE_DATABASE_URL'] %>
+    database: queue_staging
+    username: postgres
+    password: <%= ENV["DATABASE_PASSWORD"] %>
+    host: /cloudsql/workshop-app-base:asia-northeast1:app-base
 
 production:
   primary:
     <<: *default
-    url: <%= ENV['DATABASE_URL'] %>
+    database: app_production
+    username: postgres
+    password: <%= ENV["DATABASE_PASSWORD"] %>
+    host: /cloudsql/workshop-app-base:asia-northeast1:app-base
   cache:
     <<: *default
-    url: <%= ENV['CACHE_DATABASE_URL'] %>
+    database: cache_production
+    username: postgres
+    password: <%= ENV["DATABASE_PASSWORD"] %>
+    host: /cloudsql/workshop-app-base:asia-northeast1:app-base
   queue:
     <<: *default
-    url: <%= ENV['QUEUE_DATABASE_URL'] %>
+    database: queue_production
+    username: postgres
+    password: <%= ENV["DATABASE_PASSWORD"] %>
+    host: /cloudsql/workshop-app-base:asia-northeast1:app-base

@@ -22,52 +22,29 @@ Rails.application.configure do
                 :info
               end
 
-  # Configure log outputs
-  log_outputs = []
-
-  # File output with rotation
-  if Rails.env.production? || ENV['LOG_TO_FILE']
-    log_dir = Rails.root.join('log')
-    FileUtils.mkdir_p(log_dir) unless File.directory?(log_dir)
-    
-    log_file = File.open(
-      log_dir.join("#{Rails.env}.log"),
-      File::WRONLY | File::APPEND | File::CREAT
-    )
-    
-    # Configure log rotation
-    if Rails.env.production?
-      require 'logger'
-      log_file = Logger::LogDevice.new(
-        log_dir.join("#{Rails.env}.log"),
-        shift_age: 'daily',     # Rotate daily
-        shift_size: 100 * 1024 * 1024, # Or when file reaches 100MB
-        shift_period_suffix: '%Y%m%d'
-      )
-    end
-    
-    log_outputs << log_file
-  end
-
-  # STDOUT output for containers, development and test
-  if Rails.env.development? || Rails.env.test? || ENV['LOG_TO_STDOUT']
-    log_outputs << $stdout
-  end
-
-  # Use STDOUT in production for container compatibility
-  if Rails.env.production? && !ENV['LOG_TO_FILE_ONLY']
-    log_outputs << $stdout
-  end
+  # Configure log output
+  # Cloud Run環境ではSTDOUTのみを使用（コンテナのログ収集に最適）
+  log_output = if Rails.env.production? || ENV['LOG_TO_STDOUT']
+                 $stdout
+               else
+                 # 開発環境ではファイル出力も可能
+                 if ENV['LOG_TO_FILE']
+                   log_dir = Rails.root.join('log')
+                   FileUtils.mkdir_p(log_dir) unless File.directory?(log_dir)
+                   File.open(
+                     log_dir.join("#{Rails.env}.log"),
+                     File::WRONLY | File::APPEND | File::CREAT
+                   )
+                 else
+                   $stdout
+                 end
+               end
 
   # Create structured logger
-  if log_outputs.any?
-    # For now, use single output to avoid BroadcastLogger compatibility issues
-    # TODO: Implement custom broadcast logger for structured logging
-    config.logger = LoggingInfrastructure::StructuredLogger.new(
-      level: log_level,
-      output: log_outputs.first
-    )
-  end
+  config.logger = LoggingInfrastructure::StructuredLogger.new(
+    level: log_level,
+    output: log_output
+  )
 
   # Configure Rails log tags
   config.log_tags = [:request_id, -> (req) { 
